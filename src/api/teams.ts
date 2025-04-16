@@ -35,6 +35,10 @@ const teamsApi = {
     return axiosClient.get(`/teams/members/${id}`);
   },
 
+  getMemberRoleByUserId: (userId: string) => {
+    return axiosClient.get(`/teams/members/${userId}/role`);
+  },
+
   getMemberByUserId: (userId: string) => {
     return axiosClient.get(`/teams/members/user/${userId}`);
   },

@@ -36,6 +36,14 @@ const eventsApi = {
     return axiosClient.get("/events");
   },
 
+  getDraftEvents: () => {
+    return axiosClient.get("/events/draft");
+  },
+
+  getDraftEventById: (id: string) => {
+    return axiosClient.get(`/events/draft/${id}`);
+  },
+
   getUpcomingEvents: () => {
     return axiosClient.get("/events/upcoming");
   },

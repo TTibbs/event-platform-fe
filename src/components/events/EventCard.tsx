@@ -29,6 +29,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Team {
+  id: number;
+  name: string;
+  role: string;
+}
+
+interface User {
+  id: number;
+  username: string;
+  role: string;
+  teams?: Team[];
+}
 
 interface EventProps {
   event: {
@@ -54,6 +68,7 @@ interface EventProps {
 }
 
 export function EventCard({ event, userId }: EventProps) {
+  const { user } = useAuth() as { user: User | null };
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(
@@ -86,7 +101,23 @@ export function EventCard({ event, userId }: EventProps) {
 
   const isPublished = event.status === "published";
 
+  // Check if user is the creator, a team admin, or an event manager
   const isCreator = userId && Number(userId) === event.created_by;
+  const isTeamAdmin =
+    user?.role === "admin" ||
+    user?.teams?.some(
+      (team) =>
+        team.id === event.team_id &&
+        (team.role === "admin" || team.role === "owner")
+    );
+  const isEventManager =
+    user?.role === "event_manager" ||
+    user?.teams?.some(
+      (team) => team.id === event.team_id && team.role === "event_manager"
+    );
+
+  // User can edit if they are the creator, a team admin, or an event manager
+  const canEdit = isCreator || isTeamAdmin || isEventManager;
 
   useEffect(() => {
     // Check if the user is already registered for this event
@@ -211,7 +242,7 @@ export function EventCard({ event, userId }: EventProps) {
             <div className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-800">
               {isPublished ? "Published" : "Draft"}
             </div>
-            {isCreator && (
+            {canEdit && (
               <Button
                 variant="outline"
                 size="sm"
@@ -444,9 +475,12 @@ export function EventCard({ event, userId }: EventProps) {
               <div className="col-span-3 flex items-center space-x-2">
                 <Checkbox
                   id="is_public"
-                  checked={editedEvent.is_public}
+                  checked={editedEvent.status === "published"}
                   onCheckedChange={(checked) =>
-                    handleCheckboxChange("is_public", checked as boolean)
+                    handleSelectChange(
+                      "status",
+                      checked ? "published" : "draft"
+                    )
                   }
                 />
                 <label

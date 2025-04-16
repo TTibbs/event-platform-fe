@@ -7,6 +7,7 @@ import Events from "@/pages/Events";
 import Profile from "@/pages/Profile";
 import { Toaster } from "@/components/ui/sonner";
 import CreateEvent from "@/pages/CreateEvent";
+import Dashboard from "@/pages/Dashboard";
 
 function App() {
   return (
@@ -24,15 +25,7 @@ function App() {
               />
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/signup" element={<SignUp />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-                    <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-                    <p>Welcome to your dashboard!</p>
-                  </div>
-                }
-              />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/create" element={<CreateEvent />} />
               <Route path="/profile" element={<Profile />} />
