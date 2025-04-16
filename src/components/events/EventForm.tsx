@@ -24,7 +24,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import eventsApi from "@/api/events";
-import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -45,7 +44,6 @@ export default function EventForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   // Define the form
   const form = useForm<FormData>({

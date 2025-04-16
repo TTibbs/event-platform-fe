@@ -2,9 +2,17 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, Calendar, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -56,16 +64,68 @@ const Header = () => {
                   >
                     Events
                   </Link>
-                  <ThemeToggle />
                   <div className="flex items-center space-x-4">
                     <Button variant="ghost" onClick={handleLogout}>
                       Logout
                     </Button>
-                    <Link to="/profile">
-                      <Avatar className="cursor-pointer">
-                        <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
-                      </Avatar>
-                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                          <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
+                        </Avatar>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56" align="end">
+                        <DropdownMenuLabel className="font-bold py-2 text-center border-b text-primary">
+                          My Account
+                        </DropdownMenuLabel>
+                        <div className="p-2">
+                          <DropdownMenuItem
+                            asChild
+                            className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                          >
+                            <Link to="/profile" className="flex items-center">
+                              <User className="mr-2 h-4 w-4" />
+                              Profile
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            asChild
+                            className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                          >
+                            <Link to="/dashboard" className="flex items-center">
+                              <LayoutDashboard className="mr-2 h-4 w-4" />
+                              Dashboard
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            asChild
+                            className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                          >
+                            <Link to="/events" className="flex items-center">
+                              <Calendar className="mr-2 h-4 w-4" />
+                              Events
+                            </Link>
+                          </DropdownMenuItem>
+                        </div>
+                        <DropdownMenuSeparator />
+                        <div className="p-2">
+                          <ThemeToggle
+                            showLabel={true}
+                            className="rounded-md"
+                          />
+                        </div>
+                        <DropdownMenuSeparator />
+                        <div className="p-2">
+                          <DropdownMenuItem
+                            onClick={handleLogout}
+                            className="py-2 hover:bg-destructive/10 rounded-md cursor-pointer"
+                          >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logout
+                          </DropdownMenuItem>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </>
               ) : (
@@ -83,7 +143,65 @@ const Header = () => {
 
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center space-x-2">
-              <ThemeToggle />
+              {isAuthenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                      <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuLabel className="font-bold py-2 text-center border-b text-primary">
+                      My Account
+                    </DropdownMenuLabel>
+                    <div className="p-2">
+                      <DropdownMenuItem
+                        asChild
+                        className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                      >
+                        <Link to="/profile" className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        asChild
+                        className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                      >
+                        <Link to="/dashboard" className="flex items-center">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        asChild
+                        className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                      >
+                        <Link to="/events" className="flex items-center">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Events
+                        </Link>
+                      </DropdownMenuItem>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <div className="p-2">
+                      <ThemeToggle showLabel={true} className="rounded-md" />
+                    </div>
+                    <DropdownMenuSeparator />
+                    <div className="p-2">
+                      <DropdownMenuItem
+                        onClick={handleLogout}
+                        className="py-2 hover:bg-destructive/10 rounded-md cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <ThemeToggle />
+              )}
               <button onClick={toggleMobileMenu} aria-label="Toggle menu">
                 {isMobileMenuOpen ? (
                   <X className="h-6 w-6" />

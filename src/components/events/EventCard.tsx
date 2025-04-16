@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/card";
 import { format } from "date-fns";
 import eventsApi from "@/api/events";
+import teamsApi from "@/api/teams";
+import usersApi from "@/api/users";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -30,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface Team {
   id: number;
@@ -69,6 +72,7 @@ interface EventProps {
 
 export function EventCard({ event, userId }: EventProps) {
   const { user } = useAuth() as { user: User | null };
+  const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(
@@ -95,29 +99,105 @@ export function EventCard({ event, userId }: EventProps) {
     is_public: event.is_public,
   });
 
+  // Permission states
+  const [canEdit, setCanEdit] = useState(false);
+  const [checkingPermissions, setCheckingPermissions] = useState(true);
+
   const formattedStartDate = format(new Date(event.start_time), "MMM d, yyyy");
   const formattedStartTime = format(new Date(event.start_time), "h:mm a");
   const formattedEndTime = format(new Date(event.end_time), "h:mm a");
 
   const isPublished = event.status === "published";
 
-  // Check if user is the creator, a team admin, or an event manager
-  const isCreator = userId && Number(userId) === event.created_by;
-  const isTeamAdmin =
-    user?.role === "admin" ||
-    user?.teams?.some(
-      (team) =>
-        team.id === event.team_id &&
-        (team.role === "admin" || team.role === "owner")
-    );
-  const isEventManager =
-    user?.role === "event_manager" ||
-    user?.teams?.some(
-      (team) => team.id === event.team_id && team.role === "event_manager"
-    );
+  // Check user permissions via API call
+  useEffect(() => {
+    const checkEditPermissions = async () => {
+      if (!userId) {
+        setCheckingPermissions(false);
+        return;
+      }
 
-  // User can edit if they are the creator, a team admin, or an event manager
-  const canEdit = isCreator || isTeamAdmin || isEventManager;
+      try {
+        // Check if user is the creator - add detailed logging
+        const currentUserId = Number(userId);
+        const eventCreatorId = Number(event.created_by);
+
+        console.log("Permission check:", {
+          currentUserId,
+          eventCreatorId,
+          isCreator: currentUserId === eventCreatorId,
+          currentUsername: user?.username,
+          creatorUsername: event.creator_username,
+          eventTitle: event.title,
+        });
+
+        if (
+          currentUserId === eventCreatorId ||
+          user?.username === event.creator_username
+        ) {
+          console.log("User is creator - granting edit permission");
+          setCanEdit(true);
+          setCheckingPermissions(false);
+          return;
+        }
+
+        // Get user details to check global role
+        const userResponse = await usersApi.getUserById(userId.toString());
+        const userData = userResponse.data.user;
+
+        // If user is admin, they can edit
+        if (userData.role === "admin") {
+          console.log("User is admin - granting edit permission");
+          setCanEdit(true);
+          setCheckingPermissions(false);
+          return;
+        }
+
+        // Check team membership role
+        try {
+          // This gets all team memberships for a user
+          const membershipResponse = await teamsApi.getMemberByUserId(
+            userId.toString()
+          );
+          const memberships = membershipResponse.data.team_members || [];
+
+          // Check if the user has edit permission in the event's team
+          const hasEditPermission = memberships.some(
+            (membership: any) =>
+              membership.team_id === event.team_id &&
+              ["admin", "owner", "organizer", "event_manager"].includes(
+                membership.role
+              )
+          );
+
+          if (hasEditPermission) {
+            console.log(
+              "User has team role permission - granting edit permission"
+            );
+          }
+
+          setCanEdit(hasEditPermission);
+        } catch (error) {
+          console.error("Failed to check team membership:", error);
+          setCanEdit(false);
+        }
+      } catch (error) {
+        console.error("Failed to check user permissions:", error);
+        setCanEdit(false);
+      } finally {
+        setCheckingPermissions(false);
+      }
+    };
+
+    checkEditPermissions();
+  }, [
+    event.created_by,
+    event.team_id,
+    userId,
+    event.creator_username,
+    user?.username,
+    event.title,
+  ]);
 
   useEffect(() => {
     // Check if the user is already registered for this event
@@ -220,13 +300,6 @@ export function EventCard({ event, userId }: EventProps) {
     });
   };
 
-  const handleCheckboxChange = (name: string, checked: boolean) => {
-    setEditedEvent({
-      ...editedEvent,
-      [name]: checked,
-    });
-  };
-
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -242,7 +315,7 @@ export function EventCard({ event, userId }: EventProps) {
             <div className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">
               {isPublished ? "Published" : "Draft"}
             </div>
-            {canEdit && (
+            {!checkingPermissions && canEdit && (
               <Button
                 variant="outline"
                 size="sm"
@@ -274,7 +347,11 @@ export function EventCard({ event, userId }: EventProps) {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="font-medium text-foreground">Price</p>
-            <p className="text-muted-foreground">${event.price.toFixed(2)}</p>
+            <p className="text-muted-foreground">
+              {event.price !== null && event.price !== undefined
+                ? `$${event.price.toFixed(2)}`
+                : "Free"}
+            </p>
           </div>
           <div>
             <p className="font-medium text-foreground">Max Attendees</p>
@@ -283,7 +360,7 @@ export function EventCard({ event, userId }: EventProps) {
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <p>Organized by {event.team_name}</p>
+          <p>Organised by {event.team_name}</p>
           <p>Created by {event.creator_username}</p>
         </div>
 
@@ -309,7 +386,7 @@ export function EventCard({ event, userId }: EventProps) {
           </Alert>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
         {checkingRegistration ? (
           <Button disabled className="w-full">
             Checking registration status...
@@ -332,6 +409,12 @@ export function EventCard({ event, userId }: EventProps) {
             {isRegistering ? "Registering..." : "Register Now"}
           </Button>
         )}
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/events/${event.id}`)}
+        >
+          View Event
+        </Button>
       </CardFooter>
 
       {/* Edit Event Modal */}

@@ -224,21 +224,6 @@ export default function Profile() {
             )}
           </CardContent>
         </Card>
-
-        {/* Activity or Events Card */}
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your recent events and registrations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Activity data will be available soon
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

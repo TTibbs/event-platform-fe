@@ -41,7 +41,7 @@ const eventsApi = {
   },
 
   getDraftEventById: (id: string) => {
-    return axiosClient.get(`/events/draft/${id}`);
+    return axiosClient.get(`/events/${id}/draft`);
   },
 
   getUpcomingEvents: () => {

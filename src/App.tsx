@@ -4,11 +4,12 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/auth/Login";
 import SignUp from "@/pages/auth/SignUp";
-import Events from "@/pages/Events";
+import Events from "@/pages/events/Events";
 import Profile from "@/pages/Profile";
 import { Toaster } from "@/components/ui/sonner";
-import CreateEvent from "@/pages/CreateEvent";
+import CreateEvent from "@/pages/events/CreateEvent";
 import Dashboard from "@/pages/Dashboard";
+import EventDetails from "@/pages/events/EventDetails";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/create" element={<CreateEvent />} />
+                <Route path="/events/:id" element={<EventDetails />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route
                   path="*"
