@@ -49,10 +49,16 @@ const SignUp = () => {
     setError("");
 
     try {
+      // Extract base fields
+      const { username, email, password, isEventOrganiser } = formData;
+
+      // Create payload with conditional team fields
       const payload = {
-        ...formData,
-        // Only include team fields if user is an event organizer
-        ...(formData.isEventOrganiser
+        username,
+        email,
+        password,
+        isEventOrganiser,
+        ...(isEventOrganiser
           ? {
               teamName: formData.teamName,
               teamDescription: formData.teamDescription,

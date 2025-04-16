@@ -29,7 +29,7 @@ interface EventsListProps {
 export function EventsList({ events, userId }: EventsListProps) {
   if (!events.length) {
     return (
-      <div className="flex items-center justify-center h-64 border rounded-md">
+      <div className="flex items-center justify-center h-64 border border-border rounded-md bg-muted">
         <p className="text-muted-foreground">No events available</p>
       </div>
     );

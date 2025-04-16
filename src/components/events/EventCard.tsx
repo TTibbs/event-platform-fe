@@ -239,7 +239,7 @@ export function EventCard({ event, userId }: EventProps) {
             </CardDescription>
           </div>
           <div className="flex space-x-2">
-            <div className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-800">
+            <div className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground">
               {isPublished ? "Published" : "Draft"}
             </div>
             {canEdit && (
@@ -259,26 +259,26 @@ export function EventCard({ event, userId }: EventProps) {
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="font-medium">Date & Time</p>
-            <p>{formattedStartDate}</p>
-            <p>
+            <p className="font-medium text-foreground">Date & Time</p>
+            <p className="text-muted-foreground">{formattedStartDate}</p>
+            <p className="text-muted-foreground">
               {formattedStartTime} - {formattedEndTime}
             </p>
           </div>
           <div>
-            <p className="font-medium">Location</p>
-            <p>{event.location}</p>
+            <p className="font-medium text-foreground">Location</p>
+            <p className="text-muted-foreground">{event.location}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="font-medium">Price</p>
-            <p>${event.price.toFixed(2)}</p>
+            <p className="font-medium text-foreground">Price</p>
+            <p className="text-muted-foreground">${event.price.toFixed(2)}</p>
           </div>
           <div>
-            <p className="font-medium">Max Attendees</p>
-            <p>{event.max_attendees}</p>
+            <p className="font-medium text-foreground">Max Attendees</p>
+            <p className="text-muted-foreground">{event.max_attendees}</p>
           </div>
         </div>
 
@@ -315,7 +315,10 @@ export function EventCard({ event, userId }: EventProps) {
             Checking registration status...
           </Button>
         ) : isAlreadyRegistered ? (
-          <Button disabled className="w-full bg-green-600 hover:bg-green-600">
+          <Button
+            disabled
+            className="w-full bg-accent hover:bg-accent text-accent-foreground"
+          >
             Already Registered
           </Button>
         ) : (

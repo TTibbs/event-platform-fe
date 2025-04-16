@@ -52,7 +52,7 @@ export default function Events() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="animate-spin h-10 w-10 border-4 border-primary rounded-full border-t-transparent"></div>
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function Events() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold text-red-500">Error</h1>
+        <h1 className="text-2xl font-bold text-destructive">Error</h1>
         <p>{error}</p>
       </div>
     );
