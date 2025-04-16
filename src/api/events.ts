@@ -4,12 +4,21 @@ interface CreateEventParams {
   title: string;
   start_time: string;
   end_time: string;
-  team_id: string;
   [key: string]: any;
 }
 
 interface UpdateEventParams {
-  [key: string]: any;
+  title?: string;
+  description?: string;
+  location?: string;
+  start_time?: string;
+  end_time?: string;
+  price?: number;
+  max_attendees?: number;
+  status?: "draft" | "published" | "cancelled";
+  event_type?: string;
+  is_public?: boolean;
+  team_id?: number | string;
 }
 
 interface Registration {

@@ -11,6 +11,24 @@ import {
 import { format } from "date-fns";
 import eventsApi from "@/api/events";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EventProps {
   event: {
@@ -44,11 +62,31 @@ export function EventCard({ event, userId }: EventProps) {
   const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
   const [checkingRegistration, setCheckingRegistration] = useState(true);
 
+  // Edit event state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [editedEvent, setEditedEvent] = useState({
+    title: event.title,
+    description: event.description,
+    location: event.location,
+    start_time: new Date(event.start_time).toISOString().slice(0, 16),
+    end_time: new Date(event.end_time).toISOString().slice(0, 16),
+    price: event.price,
+    max_attendees: event.max_attendees,
+    status: event.status as "draft" | "published" | "cancelled",
+    event_type: event.event_type,
+    is_public: event.is_public,
+  });
+
   const formattedStartDate = format(new Date(event.start_time), "MMM d, yyyy");
   const formattedStartTime = format(new Date(event.start_time), "h:mm a");
   const formattedEndTime = format(new Date(event.end_time), "h:mm a");
 
   const isPublished = event.status === "published";
+
+  const isCreator = userId && Number(userId) === event.created_by;
 
   useEffect(() => {
     // Check if the user is already registered for this event
@@ -105,6 +143,59 @@ export function EventCard({ event, userId }: EventProps) {
     }
   };
 
+  const handleEditEvent = async () => {
+    setIsUpdating(true);
+    setUpdateError(null);
+
+    try {
+      await eventsApi.updateEvent(event.id.toString(), editedEvent);
+      setUpdateSuccess(true);
+      // Close the modal after 1 second to show success
+      setTimeout(() => {
+        setShowEditModal(false);
+        // Reload the page or update the event in place
+        window.location.reload();
+      }, 1000);
+    } catch (error: any) {
+      console.error("Update failed:", error);
+      let errorMessage = "Failed to update this event. Please try again.";
+      if (error.response?.data?.msg) {
+        errorMessage = error.response.data.msg;
+      }
+      setUpdateError(errorMessage);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setEditedEvent({
+      ...editedEvent,
+      [name]:
+        name === "price" || name === "max_attendees" ? Number(value) : value,
+    });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setEditedEvent({
+      ...editedEvent,
+      [name]:
+        name === "status"
+          ? (value as "draft" | "published" | "cancelled")
+          : value,
+    });
+  };
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setEditedEvent({
+      ...editedEvent,
+      [name]: checked,
+    });
+  };
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -116,8 +207,19 @@ export function EventCard({ event, userId }: EventProps) {
                 event.event_type.slice(1)}
             </CardDescription>
           </div>
-          <div className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-800">
-            {isPublished ? "Published" : "Draft"}
+          <div className="flex space-x-2">
+            <div className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-800">
+              {isPublished ? "Published" : "Draft"}
+            </div>
+            {isCreator && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEditModal(true)}
+              >
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -197,6 +299,188 @@ export function EventCard({ event, userId }: EventProps) {
           </Button>
         )}
       </CardFooter>
+
+      {/* Edit Event Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input
+                id="title"
+                name="title"
+                value={editedEvent.title}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={editedEvent.description}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="location" className="text-right">
+                Location
+              </Label>
+              <Input
+                id="location"
+                name="location"
+                value={editedEvent.location}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="start_time" className="text-right">
+                Start Time
+              </Label>
+              <Input
+                id="start_time"
+                name="start_time"
+                type="datetime-local"
+                value={editedEvent.start_time}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="end_time" className="text-right">
+                End Time
+              </Label>
+              <Input
+                id="end_time"
+                name="end_time"
+                type="datetime-local"
+                value={editedEvent.end_time}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="price" className="text-right">
+                Price
+              </Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={editedEvent.price}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="max_attendees" className="text-right">
+                Max Attendees
+              </Label>
+              <Input
+                id="max_attendees"
+                name="max_attendees"
+                type="number"
+                min="1"
+                value={editedEvent.max_attendees}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select
+                onValueChange={(value) => handleSelectChange("status", value)}
+                defaultValue={editedEvent.status}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="event_type" className="text-right">
+                Event Type
+              </Label>
+              <Input
+                id="event_type"
+                name="event_type"
+                value={editedEvent.event_type}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="is_public" className="text-right">
+                Public Event
+              </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Checkbox
+                  id="is_public"
+                  checked={editedEvent.is_public}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange("is_public", checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor="is_public"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Make this event public
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {updateSuccess && (
+            <Alert className="mt-2">
+              <AlertDescription>Successfully updated event!</AlertDescription>
+            </Alert>
+          )}
+
+          {updateError && (
+            <Alert variant="destructive" className="mt-2">
+              <AlertDescription>{updateError}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditEvent} disabled={isUpdating}>
+              {isUpdating ? "Updating..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

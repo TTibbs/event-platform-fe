@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import eventsApi from "@/api/events";
 import { EventsList } from "@/components/events/EventsList";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface Event {
   id: number;
@@ -28,7 +30,7 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-
+  const navigate = useNavigate();
   // Get current user ID (if authenticated)
   const currentUserId = user?.id;
 
@@ -72,6 +74,10 @@ export default function Events() {
           Browse and register for upcoming events
         </p>
       </header>
+
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => navigate("/events/create")}>Create Event</Button>
+      </div>
 
       <EventsList events={events} userId={currentUserId} />
     </div>
