@@ -33,6 +33,11 @@ const usersApi = {
   deleteUser: (id: string) => {
     return axiosClient.delete(`/users/${id}`);
   },
+
+  // New endpoint for admin dashboard that consolidates all data in one call
+  getAdminDashboardData: () => {
+    return axiosClient.get("/users/admin/dashboard");
+  },
 };
 
 export default usersApi;

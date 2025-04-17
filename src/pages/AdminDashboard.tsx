@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import usersApi from "@/api/users";
-import teamsApi from "@/api/teams";
-import eventsApi from "@/api/events";
 import { User } from "@/types/users";
 import { TeamResponse, TeamMember } from "@/types/teams";
 import { Event } from "@/types/events";
@@ -48,6 +46,23 @@ import {
   Plus,
 } from "lucide-react";
 
+// Define the admin dashboard data structure
+interface AdminDashboardData {
+  users: User[];
+  teams: TeamResponse[];
+  teamMembers: TeamMember[];
+  events: Event[];
+}
+
+// Define a new interface to match the team member data we'll extract
+interface ExtractedTeamMember {
+  userId: number;
+  teamId: number;
+  username: string;
+  email: string;
+  role: string;
+}
+
 export default function AdminDashboard() {
   const {
     isSiteAdmin,
@@ -58,6 +73,12 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("overview");
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<AdminDashboardData>({
+    users: [],
+    teams: [],
+    teamMembers: [],
+    events: [],
+  });
   const [stats, setStats] = useState({
     users: 0,
     teams: 0,
@@ -92,32 +113,62 @@ export default function AdminDashboard() {
     verifyAccess();
   }, [isAuthenticated, isSiteAdmin, navigate, checkSiteAdmin, authLoading]);
 
-  // Load overview stats
+  // Load dashboard data from consolidated API endpoint
   useEffect(() => {
-    const loadStats = async () => {
+    const loadDashboardData = async () => {
       try {
-        const [usersRes, teamsRes, eventsRes] = await Promise.all([
-          usersApi.getAllUsers(),
-          teamsApi.getAllTeams(),
-          eventsApi.getAllEvents(),
-        ]);
+        if (!loading && isSiteAdmin) {
+          const response = await usersApi.getAdminDashboardData();
 
-        setStats({
-          users: usersRes.data?.length || 0,
-          teams: teamsRes.data?.length || 0,
-          events: eventsRes.data?.length || 0,
-        });
+          // The actual data is nested under response.data.data
+          const data = response.data?.data || {};
+
+          // Combine regular and draft events
+          const allEvents = [
+            ...(Array.isArray(data.events) ? data.events : []),
+            ...(Array.isArray(data.draft_events) ? data.draft_events : []),
+          ];
+
+          // Extract team membership data from users
+          const extractedTeamMembers: ExtractedTeamMember[] = [];
+          if (Array.isArray(data.users)) {
+            data.users.forEach((user: any) => {
+              if (Array.isArray(user.teams)) {
+                user.teams.forEach((team: any) => {
+                  extractedTeamMembers.push({
+                    userId: user.id,
+                    teamId: team.team_id,
+                    username: user.username,
+                    email: user.email,
+                    role: team.role,
+                  });
+                });
+              }
+            });
+          }
+
+          setDashboardData({
+            users: Array.isArray(data.users) ? data.users : [],
+            teams: Array.isArray(data.teams) ? data.teams : [],
+            teamMembers: extractedTeamMembers as any, // Cast to match expected type
+            events: allEvents,
+          });
+
+          setStats({
+            users: data.total_users || 0,
+            teams: data.total_teams || 0,
+            events: allEvents.length,
+          });
+        }
       } catch (error) {
-        console.error("Error loading dashboard stats:", error);
+        console.error("Error loading dashboard data:", error);
       }
     };
 
-    if (!loading && isSiteAdmin) {
-      loadStats();
-    }
+    loadDashboardData();
   }, [loading, isSiteAdmin]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin h-10 w-10 border-4 border-primary rounded-full border-t-transparent"></div>
@@ -134,11 +185,16 @@ export default function AdminDashboard() {
       case "overview":
         return <AdminOverview stats={stats} />;
       case "users":
-        return <UsersManagement />;
+        return <UsersManagement users={dashboardData.users} />;
       case "teams":
-        return <TeamsManagement />;
+        return (
+          <TeamsManagement
+            teams={dashboardData.teams}
+            teamMembers={dashboardData.teamMembers}
+          />
+        );
       case "events":
-        return <EventsManagement />;
+        return <EventsManagement events={dashboardData.events} />;
       case "settings":
         return <AdminSettings />;
       default:
@@ -330,32 +386,9 @@ function AdminOverview({
   );
 }
 
-function UsersManagement() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+function UsersManagement({ users }: { users: User[] }) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const response = await usersApi.getAllUsers();
-        // Check if data is an array or if it's nested in a property
-        const userData = Array.isArray(response.data)
-          ? response.data
-          : response.data?.users || [];
-        setUsers(userData);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Failed to load users. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -461,50 +494,22 @@ function UsersManagement() {
   );
 }
 
-function TeamsManagement() {
-  const [teams, setTeams] = useState<TeamResponse[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
+function TeamsManagement({
+  teams,
+  teamMembers,
+}: {
+  teams: TeamResponse[];
+  teamMembers: any[];
+}) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchTeamsData = async () => {
-      try {
-        setLoading(true);
-        const [teamsResponse, membersResponse] = await Promise.all([
-          teamsApi.getAllTeams(),
-          teamsApi.getAllTeamMembers(),
-        ]);
-
-        // Check if data is an array or if it's nested in a property
-        const teamsData = Array.isArray(teamsResponse.data)
-          ? teamsResponse.data
-          : teamsResponse.data?.teams || [];
-
-        const membersData = Array.isArray(membersResponse.data)
-          ? membersResponse.data
-          : membersResponse.data?.members || [];
-
-        setTeams(teamsData);
-        setTeamMembers(membersData);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching teams data:", err);
-        setError("Failed to load teams. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTeamsData();
-  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
   const getTeamMembersCount = (teamId: number) => {
-    return teamMembers.filter((member) => member.team_id === teamId).length;
+    return teamMembers.filter((member) => member.teamId === teamId).length;
   };
 
   return (
@@ -611,32 +616,9 @@ function TeamsManagement() {
   );
 }
 
-function EventsManagement() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+function EventsManagement({ events }: { events: Event[] }) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        const response = await eventsApi.getAllEvents();
-        // Check if data is an array or if it's nested in a property
-        const eventsData = Array.isArray(response.data)
-          ? response.data
-          : response.data?.events || [];
-        setEvents(eventsData);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching events:", err);
-        setError("Failed to load events. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
