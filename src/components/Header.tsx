@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Menu,
   X,
@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import teamsApi from "@/api/teams";
+import usersApi from "@/api/users";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,8 @@ const Header = () => {
     useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamMember, setIsTeamMember] = useState(false);
+  const [currentUserData, setCurrentUserData] = useState(user);
+  const location = useLocation();
 
   useEffect(() => {
     const initHeader = async () => {
@@ -46,17 +49,26 @@ const Header = () => {
         console.error("Error checking team membership:", err);
         setIsTeamMember(false);
       }
+
+      // Fetch latest user data to ensure profile image is up-to-date
+      try {
+        const userResponse = await usersApi.getUserById(user.id.toString());
+        setCurrentUserData(userResponse.data.user);
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        setCurrentUserData(user);
+      }
     };
 
     if (isAuthenticated) {
       initHeader();
     }
-  }, [user, isAuthenticated, checkSiteAdmin]);
+  }, [user, isAuthenticated, checkSiteAdmin, location.pathname]);
 
   // Generate avatar fallback from username
   const getAvatarFallback = () => {
-    if (!user?.username) return "U";
-    return user.username.substring(0, 2).toUpperCase();
+    if (!currentUserData?.username) return "U";
+    return currentUserData.username.substring(0, 2).toUpperCase();
   };
 
   // Toggle mobile menu
@@ -111,6 +123,12 @@ const Header = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                          {currentUserData?.profile_image_url && (
+                            <AvatarImage
+                              src={currentUserData.profile_image_url}
+                              alt={currentUserData.username || "User"}
+                            />
+                          )}
                           <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
                         </Avatar>
                       </DropdownMenuTrigger>
@@ -212,6 +230,12 @@ const Header = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                      {currentUserData?.profile_image_url && (
+                        <AvatarImage
+                          src={currentUserData.profile_image_url}
+                          alt={currentUserData.username || "User"}
+                        />
+                      )}
                       <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
                     </Avatar>
                   </DropdownMenuTrigger>

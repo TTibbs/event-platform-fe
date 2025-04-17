@@ -8,7 +8,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import usersApi from "@/api/users";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,12 @@ import EventsCalendar from "@/components/events/EventsCalendar";
 import { UserTeam } from "@/types/users";
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUserData } = useAuth();
   const [teams, setTeams] = useState<UserTeam[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [isTeamMember, setIsTeamMember] = useState(false);
@@ -43,6 +44,7 @@ export default function Profile() {
 
           setUsername(fetchedUser.username || "");
           setEmail(fetchedUser.email || "");
+          setProfileImageUrl(fetchedUser.profile_image_url || "");
         } catch (error) {
           console.error("Failed to fetch user data:", error);
         }
@@ -61,6 +63,7 @@ export default function Profile() {
     if (userData) {
       setUsername(userData.username || "");
       setEmail(userData.email || "");
+      setProfileImageUrl(userData.profile_image_url || "");
     }
   };
 
@@ -72,6 +75,7 @@ export default function Profile() {
       await usersApi.updateUser(String(user.id), {
         username,
         email,
+        profile_image_url: profileImageUrl,
       });
 
       // Update local user data
@@ -79,6 +83,14 @@ export default function Profile() {
         ...userData,
         username,
         email,
+        profile_image_url: profileImageUrl,
+      });
+
+      // Update user data in context to reflect changes across components
+      updateUserData({
+        username,
+        email,
+        profile_image_url: profileImageUrl,
       });
 
       setIsEditing(false);
@@ -128,6 +140,12 @@ export default function Profile() {
         <Card className={isTeamMember ? "md:col-span-1" : "w-full"}>
           <CardHeader className="flex flex-col items-center">
             <Avatar className="h-24 w-24 mb-4">
+              {displayData.profile_image_url && (
+                <AvatarImage
+                  src={displayData.profile_image_url}
+                  alt={displayData.username || "User"}
+                />
+              )}
               <AvatarFallback className="text-xl">
                 {getInitials(displayData.username || "")}
               </AvatarFallback>
@@ -156,6 +174,16 @@ export default function Profile() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profileImageUrl">Profile Image URL</Label>
+                  <Input
+                    id="profileImageUrl"
+                    type="url"
+                    placeholder="https://example.com/profile.jpg"
+                    value={profileImageUrl}
+                    onChange={(e) => setProfileImageUrl(e.target.value)}
                   />
                 </div>
               </div>

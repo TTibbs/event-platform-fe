@@ -6,6 +6,7 @@ export interface User {
   email: string;
   created_at: string;
   updated_at: string;
+  profile_image_url?: string;
   teams?: UserTeam[];
   role?: string;
   is_site_admin?: boolean;
@@ -14,6 +15,7 @@ export interface User {
 export interface UpdateUserParams {
   username?: string;
   email?: string;
+  profile_image_url?: string;
   [key: string | number]: any;
 }
 

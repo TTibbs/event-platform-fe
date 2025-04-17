@@ -22,6 +22,7 @@ interface User {
   id?: number;
   username?: string;
   email?: string;
+  profile_image_url?: string;
   created_at?: string;
   updated_at?: string;
   teams?: Team[];
@@ -39,6 +40,7 @@ interface AuthContextType {
   error: string | null;
   isSiteAdmin: boolean;
   checkSiteAdmin: () => Promise<void>;
+  updateUserData: (userData: Partial<User>) => void;
 }
 
 // Create the context with default values
@@ -51,6 +53,7 @@ const AuthContext = createContext<AuthContextType>({
   error: null,
   isSiteAdmin: false,
   checkSiteAdmin: async () => {},
+  updateUserData: () => {},
 });
 
 // Hook to use the auth context
@@ -76,6 +79,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to check admin status:", error);
       setIsSiteAdmin(false);
     }
+  };
+
+  // Update user data in context and localStorage
+  const updateUserData = (userData: Partial<User>) => {
+    if (!user) return;
+
+    // Update user state with new data
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+
+    // Update localStorage
+    localStorage.setItem("userData", JSON.stringify(updatedUser));
+
+    // Trigger storage event for other tabs
+    window.dispatchEvent(new Event("storage"));
   };
 
   // Initialize auth state from localStorage on mount
@@ -224,6 +242,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     error,
     isSiteAdmin,
     checkSiteAdmin,
+    updateUserData,
   };
 
   return (

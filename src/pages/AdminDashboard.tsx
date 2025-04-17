@@ -5,7 +5,6 @@ import usersApi from "@/api/users";
 import { User } from "@/types/users";
 import { TeamResponse, TeamMember } from "@/types/teams";
 import { Event } from "@/types/events";
-
 import {
   Sidebar,
   SidebarContent,
