@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import EventsCalendar from "@/components/events/EventsCalendar";
 
 interface Team {
   team_id: number;
@@ -118,7 +119,7 @@ export default function Profile() {
     <div className="container mx-auto max-w-4xl py-8">
       <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* User Info Card */}
         <Card className="md:col-span-1">
           <CardHeader className="flex flex-col items-center">
@@ -225,6 +226,13 @@ export default function Profile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Events Calendar Section */}
+      {user && user.id && (
+        <div className="mb-6">
+          <EventsCalendar userId={user.id.toString()} />
+        </div>
+      )}
     </div>
   );
 }

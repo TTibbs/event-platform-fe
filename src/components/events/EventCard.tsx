@@ -122,20 +122,10 @@ export function EventCard({ event, userId }: EventProps) {
         const currentUserId = Number(userId);
         const eventCreatorId = Number(event.created_by);
 
-        console.log("Permission check:", {
-          currentUserId,
-          eventCreatorId,
-          isCreator: currentUserId === eventCreatorId,
-          currentUsername: user?.username,
-          creatorUsername: event.creator_username,
-          eventTitle: event.title,
-        });
-
         if (
           currentUserId === eventCreatorId ||
           user?.username === event.creator_username
         ) {
-          console.log("User is creator - granting edit permission");
           setCanEdit(true);
           setCheckingPermissions(false);
           return;
@@ -147,7 +137,6 @@ export function EventCard({ event, userId }: EventProps) {
 
         // If user is admin, they can edit
         if (userData.role === "admin") {
-          console.log("User is admin - granting edit permission");
           setCanEdit(true);
           setCheckingPermissions(false);
           return;
@@ -169,12 +158,6 @@ export function EventCard({ event, userId }: EventProps) {
                 membership.role
               )
           );
-
-          if (hasEditPermission) {
-            console.log(
-              "User has team role permission - granting edit permission"
-            );
-          }
 
           setCanEdit(hasEditPermission);
         } catch (error) {

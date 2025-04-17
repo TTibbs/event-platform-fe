@@ -21,6 +21,10 @@ const usersApi = {
     return axiosClient.get(`/users/email/${email}`);
   },
 
+  getUserEventRegistrations: (id: string) => {
+    return axiosClient.get(`/users/${id}/registrations`);
+  },
+
   updateUser: (id: string, params: UpdateUserParams) => {
     return axiosClient.patch(`/users/${id}`, params);
   },
