@@ -10,6 +10,10 @@ const usersApi = {
     return axiosClient.get(`/users/${id}`);
   },
 
+  getIsSiteAdmin: (id: string) => {
+    return axiosClient.get(`/users/${id}/is-site-admin`);
+  },
+
   getUserByUsername: (username: string) => {
     return axiosClient.get(`/users/username/${username}`);
   },

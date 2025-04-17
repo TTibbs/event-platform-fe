@@ -86,9 +86,9 @@ export default function EventDetails() {
         const userResponse = await usersApi.getUserById(user.id.toString());
         const userData = userResponse.data.user;
 
-        // If user is admin, they can edit
-        if (userData.role === "admin") {
-          console.log("User is admin - granting edit permission");
+        // If user is site admin, they can edit
+        if (userData.is_site_admin) {
+          console.log("User is site admin - granting edit permission");
           setCanEdit(true);
           return;
         }
@@ -107,7 +107,7 @@ export default function EventDetails() {
         const hasEditPermission = memberships.some(
           (membership: any) =>
             membership.team_id === teamId &&
-            ["admin", "owner", "organizer", "event_manager"].includes(
+            ["team_admin", "owner", "organizer", "event_manager"].includes(
               membership.role
             )
         );

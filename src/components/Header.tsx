@@ -2,7 +2,15 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, X, User, Calendar, LayoutDashboard, LogOut } from "lucide-react";
+import {
+  Menu,
+  X,
+  User,
+  Calendar,
+  LayoutDashboard,
+  LogOut,
+  ShieldCheck,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import teamsApi from "@/api/teams";
@@ -16,28 +24,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isSiteAdmin, checkSiteAdmin } =
+    useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTeamMember, setIsTeamMember] = useState(false);
 
   useEffect(() => {
-    const checkTeamMembership = async () => {
+    const initHeader = async () => {
       if (!user?.id) return;
 
+      // Check for site admin status
+      await checkSiteAdmin();
+
+      // Check team membership
       try {
-        const response = await teamsApi.getMemberByUserId(user.id.toString());
-        // If we get a successful response, the user is a team member
-        setIsTeamMember(!!response.data);
+        const teamResponse = await teamsApi.getMemberByUserId(
+          user.id.toString()
+        );
+        setIsTeamMember(!!teamResponse.data);
       } catch (err) {
-        // If we get an error, user is not a team member
+        console.error("Error checking team membership:", err);
         setIsTeamMember(false);
       }
     };
 
     if (isAuthenticated) {
-      checkTeamMembership();
+      initHeader();
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, checkSiteAdmin]);
 
   // Generate avatar fallback from username
   const getAvatarFallback = () => {
@@ -74,21 +88,24 @@ const Header = () => {
               {isAuthenticated ? (
                 <>
                   {isTeamMember && (
-                    <Link
-                      to="/dashboard"
-                      className="text-sm font-medium hover:text-primary"
-                    >
-                      Dashboard
-                    </Link>
+                    <Button variant="ghost" className="cursor-pointer" asChild>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </Button>
                   )}
-                  <Link
-                    to="/events"
-                    className="text-sm font-medium hover:text-primary"
-                  >
-                    Events
-                  </Link>
+                  {isSiteAdmin && (
+                    <Button variant="ghost" className="cursor-pointer" asChild>
+                      <Link to="/admin">Admin</Link>
+                    </Button>
+                  )}
+                  <Button variant="ghost" className="cursor-pointer" asChild>
+                    <Link to="/events">Events</Link>
+                  </Button>
                   <div className="flex items-center space-x-4">
-                    <Button variant="ghost" onClick={handleLogout}>
+                    <Button
+                      variant="ghost"
+                      onClick={handleLogout}
+                      className="cursor-pointer"
+                    >
                       Logout
                     </Button>
                     <DropdownMenu>
@@ -104,9 +121,12 @@ const Header = () => {
                         <div className="p-2">
                           <DropdownMenuItem
                             asChild
-                            className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                            className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
                           >
-                            <Link to="/profile" className="flex items-center">
+                            <Link
+                              to="/profile"
+                              className="flex items-center w-full"
+                            >
                               <User className="mr-2 h-4 w-4" />
                               Profile
                             </Link>
@@ -114,22 +134,39 @@ const Header = () => {
                           {isTeamMember && (
                             <DropdownMenuItem
                               asChild
-                              className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                              className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
                             >
                               <Link
                                 to="/dashboard"
-                                className="flex items-center"
+                                className="flex items-center w-full"
                               >
                                 <LayoutDashboard className="mr-2 h-4 w-4" />
                                 Dashboard
                               </Link>
                             </DropdownMenuItem>
                           )}
+                          {isSiteAdmin && (
+                            <DropdownMenuItem
+                              asChild
+                              className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
+                            >
+                              <Link
+                                to="/admin"
+                                className="flex items-center w-full"
+                              >
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                Admin Dashboard
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             asChild
-                            className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                            className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
                           >
-                            <Link to="/events" className="flex items-center">
+                            <Link
+                              to="/events"
+                              className="flex items-center w-full"
+                            >
                               <Calendar className="mr-2 h-4 w-4" />
                               Events
                             </Link>
@@ -139,7 +176,7 @@ const Header = () => {
                         <div className="p-2">
                           <ThemeToggle
                             showLabel={true}
-                            className="rounded-md"
+                            className="rounded-md w-full"
                           />
                         </div>
                         <DropdownMenuSeparator />
@@ -158,12 +195,12 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <Link to="/auth/login">
-                    <Button variant="ghost">Login</Button>
-                  </Link>
-                  <Link to="/auth/signup">
-                    <Button>Sign Up</Button>
-                  </Link>
+                  <Button variant="ghost" className="cursor-pointer" asChild>
+                    <Link to="/auth/login">Login</Link>
+                  </Button>
+                  <Button className="cursor-pointer" asChild>
+                    <Link to="/auth/signup">Sign Up</Link>
+                  </Button>
                   <ThemeToggle />
                 </>
               )}
@@ -185,9 +222,12 @@ const Header = () => {
                     <div className="p-2">
                       <DropdownMenuItem
                         asChild
-                        className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                        className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
                       >
-                        <Link to="/profile" className="flex items-center">
+                        <Link
+                          to="/profile"
+                          className="flex items-center w-full"
+                        >
                           <User className="mr-2 h-4 w-4" />
                           Profile
                         </Link>
@@ -195,19 +235,36 @@ const Header = () => {
                       {isTeamMember && (
                         <DropdownMenuItem
                           asChild
-                          className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                          className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
                         >
-                          <Link to="/dashboard" className="flex items-center">
+                          <Link
+                            to="/dashboard"
+                            className="flex items-center w-full"
+                          >
                             <LayoutDashboard className="mr-2 h-4 w-4" />
                             Dashboard
                           </Link>
                         </DropdownMenuItem>
                       )}
+                      {isSiteAdmin && (
+                        <DropdownMenuItem
+                          asChild
+                          className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
+                        >
+                          <Link
+                            to="/admin"
+                            className="flex items-center w-full"
+                          >
+                            <ShieldCheck className="mr-2 h-4 w-4" />
+                            Admin Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         asChild
-                        className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                        className="py-2 hover:bg-primary/10 rounded-md cursor-pointer"
                       >
-                        <Link to="/events" className="flex items-center">
+                        <Link to="/events" className="flex items-center w-full">
                           <Calendar className="mr-2 h-4 w-4" />
                           Events
                         </Link>
@@ -215,7 +272,10 @@ const Header = () => {
                     </div>
                     <DropdownMenuSeparator />
                     <div className="p-2">
-                      <ThemeToggle showLabel={true} className="rounded-md" />
+                      <ThemeToggle
+                        showLabel={true}
+                        className="rounded-md w-full"
+                      />
                     </div>
                     <DropdownMenuSeparator />
                     <div className="p-2">
@@ -232,7 +292,11 @@ const Header = () => {
               ) : (
                 <ThemeToggle />
               )}
-              <button onClick={toggleMobileMenu} aria-label="Toggle menu">
+              <button
+                onClick={toggleMobileMenu}
+                aria-label="Toggle menu"
+                className="p-2 rounded-md hover:bg-muted cursor-pointer"
+              >
                 {isMobileMenuOpen ? (
                   <X className="h-6 w-6" />
                 ) : (
@@ -250,62 +314,86 @@ const Header = () => {
           <div className="container mx-auto px-4 py-4 space-y-3">
             {isAuthenticated ? (
               <>
-                <div className="flex items-center space-x-3 pb-3">
-                  <Avatar>
-                    <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
-                  </Avatar>
-                  <div className="font-medium">{user?.username}</div>
-                </div>
-                <div className="grid gap-2">
-                  {isTeamMember && (
-                    <Link
-                      to="/dashboard"
-                      className="block py-2 px-3 rounded-md hover:bg-muted"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                  )}
-                  <Link
-                    to="/events"
-                    className="block py-2 px-3 rounded-md hover:bg-muted"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Events
-                  </Link>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start cursor-pointer"
+                  asChild
+                >
                   <Link
                     to="/profile"
-                    className="block py-2 px-3 rounded-md hover:bg-muted"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Profile
                   </Link>
+                </Button>
+                {isTeamMember && (
                   <Button
                     variant="ghost"
-                    onClick={handleLogout}
-                    className="justify-start px-3"
+                    className="w-full justify-start cursor-pointer"
+                    asChild
                   >
-                    Logout
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
                   </Button>
-                </div>
+                )}
+                {isSiteAdmin && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start cursor-pointer"
+                    asChild
+                  >
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start cursor-pointer"
+                  asChild
+                >
+                  <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}>
+                    Events
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start cursor-pointer text-destructive hover:bg-destructive/10"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </Button>
               </>
             ) : (
-              <div className="grid gap-2">
-                <Link
-                  to="/auth/login"
-                  onClick={() => setIsMobileMenuOpen(false)}
+              <>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start cursor-pointer"
+                  asChild
                 >
-                  <Button variant="ghost" className="w-full justify-start">
+                  <Link
+                    to="/auth/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     Login
-                  </Button>
-                </Link>
-                <Link
-                  to="/auth/signup"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Button className="w-full">Sign Up</Button>
-                </Link>
-              </div>
+                  </Link>
+                </Button>
+                <Button className="w-full cursor-pointer" asChild>
+                  <Link
+                    to="/auth/signup"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </Button>
+              </>
             )}
           </div>
         </div>

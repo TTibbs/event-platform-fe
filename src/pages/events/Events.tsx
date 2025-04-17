@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import eventsApi from "@/api/events";
 import teamsApi from "@/api/teams";
+import usersApi from "@/api/users";
 import { EventsList } from "@/components/events/EventsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,14 @@ export default function Events() {
           user.id.toString()
         );
         if (!memberResponse.data) {
+          // Even if not a team member, check if site admin
+          const userResponse = await usersApi.getUserById(user.id.toString());
+          const userData = userResponse.data.user;
+          if (userData.is_site_admin) {
+            setCanCreateEvent(true);
+            return;
+          }
+
           setCanCreateEvent(false);
           return;
         }
@@ -41,8 +50,8 @@ export default function Events() {
         );
         const role = roleResponse.data?.role;
 
-        // Allow creating events if admin or event organiser
-        setCanCreateEvent(role === "admin" || role === "event organiser");
+        // Allow creating events if site admin, team admin or event organiser
+        setCanCreateEvent(role === "team_admin" || role === "event organiser");
       } catch (err) {
         // If error, user can't create events
         setCanCreateEvent(false);

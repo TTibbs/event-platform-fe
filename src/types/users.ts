@@ -8,6 +8,7 @@ export interface User {
   updated_at: string;
   teams?: UserTeam[];
   role?: string;
+  is_site_admin?: boolean;
 }
 
 export interface UpdateUserParams {
@@ -21,5 +22,5 @@ export interface UserTeam {
   team_id: number;
   team_name: string;
   team_description: string;
-  role: string;
+  role: string; // Note: "admin" is now "team_admin" in the backend
 }

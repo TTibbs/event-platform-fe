@@ -4,7 +4,7 @@ export interface Team {
   team_id: number;
   team_name: string;
   team_description: string;
-  role: string;
+  role: string; // Note: "admin" is now "team_admin" in the backend
 }
 
 export interface TeamMember {
@@ -13,7 +13,7 @@ export interface TeamMember {
   email: string;
   user_id: number;
   team_id: number;
-  role: string;
+  role: string; // Note: "admin" is now "team_admin" in the backend
   team_created_at: string;
 }
 

@@ -40,6 +40,7 @@ interface AuthUser {
   id: number;
   username: string;
   role?: string;
+  is_site_admin?: boolean;
 }
 
 interface EventProps {
@@ -112,8 +113,8 @@ export function EventCard({ event, userId }: EventProps) {
         const userResponse = await usersApi.getUserById(userId.toString());
         const userData = userResponse.data.user;
 
-        // If user is admin, they can edit
-        if (userData.role === "admin") {
+        // If user is site admin, they can edit
+        if (userData.is_site_admin) {
           setCanEdit(true);
           setCheckingPermissions(false);
           return;
@@ -131,7 +132,7 @@ export function EventCard({ event, userId }: EventProps) {
           const hasEditPermission = memberships.some(
             (membership: any) =>
               membership.team_id === event.team_id &&
-              ["admin", "owner", "organizer", "event_manager"].includes(
+              ["team_admin", "owner", "organizer", "event_manager"].includes(
                 membership.role
               )
           );

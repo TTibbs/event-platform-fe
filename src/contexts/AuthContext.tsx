@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import authApi from "@/api/auth";
+import usersApi from "@/api/users";
 
 // Define the team interface
 interface Team {
@@ -24,6 +25,7 @@ interface User {
   created_at?: string;
   updated_at?: string;
   teams?: Team[];
+  is_site_admin?: boolean;
   [key: string]: any;
 }
 
@@ -35,6 +37,8 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
+  isSiteAdmin: boolean;
+  checkSiteAdmin: () => Promise<void>;
 }
 
 // Create the context with default values
@@ -45,6 +49,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   error: null,
+  isSiteAdmin: false,
+  checkSiteAdmin: async () => {},
 });
 
 // Hook to use the auth context
@@ -56,18 +62,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSiteAdmin, setIsSiteAdmin] = useState<boolean>(false);
   const navigate = useNavigate();
+
+  console.log("user", user);
+  console.log("isSiteAdmin", isSiteAdmin);
+
+  // Check if current user is a site admin using dedicated endpoint
+  const checkSiteAdmin = async () => {
+    if (!isAuthenticated || !user?.id) return;
+
+    try {
+      const response = await usersApi.getIsSiteAdmin(user.id.toString());
+      setIsSiteAdmin(response.data.is_site_admin === true);
+      console.log("Admin check response:", response.data);
+    } catch (error) {
+      console.error("Failed to check admin status:", error);
+      setIsSiteAdmin(false);
+    }
+  };
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       const token = localStorage.getItem("token");
       const userData = localStorage.getItem("userData");
 
       if (token && userData) {
         try {
-          setUser(JSON.parse(userData));
+          const parsedUserData = JSON.parse(userData);
+          setUser(parsedUserData);
           setIsAuthenticated(true);
+
+          // Initial setting based on stored user data
+          setIsSiteAdmin(!!parsedUserData.is_site_admin);
+
+          // Then verify with the API
+          if (parsedUserData.id) {
+            try {
+              const response = await usersApi.getIsSiteAdmin(
+                parsedUserData.id.toString()
+              );
+              setIsSiteAdmin(response.data.is_site_admin === true);
+              console.log("Admin check on init:", response.data);
+            } catch (adminError) {
+              console.error(
+                "Failed to check admin status on init:",
+                adminError
+              );
+            }
+          }
         } catch (e) {
           console.error("Failed to parse user data:", e);
           clearAuthData();
@@ -94,6 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("userData");
     setUser(null);
     setIsAuthenticated(false);
+    setIsSiteAdmin(false);
   };
 
   // Login function
@@ -119,6 +164,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Update state
       setUser(responseData.user);
       setIsAuthenticated(true);
+
+      // Check if the user is a site admin after login
+      if (responseData.user.id) {
+        try {
+          const adminResponse = await usersApi.getIsSiteAdmin(
+            responseData.user.id.toString()
+          );
+          setIsSiteAdmin(adminResponse.data.is_site_admin === true);
+          console.log("Admin check on login:", adminResponse.data);
+        } catch (adminError) {
+          console.error("Failed to check admin status on login:", adminError);
+          setIsSiteAdmin(false);
+        }
+      }
 
       // Trigger storage event for other tabs
       window.dispatchEvent(new Event("storage"));
@@ -169,6 +228,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     logout,
     error,
+    isSiteAdmin,
+    checkSiteAdmin,
   };
 
   return (
