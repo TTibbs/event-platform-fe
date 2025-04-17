@@ -26,6 +26,7 @@ export default function Profile() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  const [isTeamMember, setIsTeamMember] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,7 +35,12 @@ export default function Profile() {
           const response = await usersApi.getUserById(String(user.id));
           const fetchedUser = response.data.user;
           setUserData(fetchedUser);
-          setTeams(fetchedUser.teams || []);
+
+          // Set teams and determine if user is a team member
+          const userTeams = fetchedUser.teams || [];
+          setTeams(userTeams);
+          setIsTeamMember(userTeams.length > 0);
+
           setUsername(fetchedUser.username || "");
           setEmail(fetchedUser.email || "");
         } catch (error) {
@@ -113,9 +119,13 @@ export default function Profile() {
     <div className="container mx-auto max-w-4xl py-8">
       <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div
+        className={`grid grid-cols-1 ${
+          isTeamMember ? "md:grid-cols-3" : "md:max-w-md mx-auto"
+        } gap-6 mb-6`}
+      >
         {/* User Info Card */}
-        <Card className="md:col-span-1">
+        <Card className={isTeamMember ? "md:col-span-1" : "w-full"}>
           <CardHeader className="flex flex-col items-center">
             <Avatar className="h-24 w-24 mb-4">
               <AvatarFallback className="text-xl">
@@ -187,38 +197,36 @@ export default function Profile() {
           </CardFooter>
         </Card>
 
-        {/* Teams Card */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Your Teams</CardTitle>
-            <CardDescription>
-              Teams you're a member of and your role in each
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {teams && teams.length > 0 ? (
-              <div className="space-y-4">
-                {teams.map((team: UserTeam) => (
-                  <div key={team.team_id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium">{team.team_name}</h3>
-                      <span className="px-2 py-1 bg-slate-100 text-slate-800 text-xs rounded-full">
-                        {team.role.replace("_", " ")}
-                      </span>
+        {/* Teams Card - Only shown if user is a team member */}
+        {isTeamMember && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Your Teams</CardTitle>
+              <CardDescription>
+                Teams you're a member of and your role in each
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {teams && teams.length > 0 && (
+                <div className="space-y-4">
+                  {teams.map((team: UserTeam) => (
+                    <div key={team.team_id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{team.team_name}</h3>
+                        <span className="px-2 py-1 bg-slate-100 text-slate-800 text-xs rounded-full">
+                          {team.role.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {team.team_description}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {team.team_description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                You are not a member of any teams yet
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Events Calendar Section */}
