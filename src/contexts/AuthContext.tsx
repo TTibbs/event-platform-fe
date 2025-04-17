@@ -65,9 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isSiteAdmin, setIsSiteAdmin] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  console.log("user", user);
-  console.log("isSiteAdmin", isSiteAdmin);
-
   // Check if current user is a site admin using dedicated endpoint
   const checkSiteAdmin = async () => {
     if (!isAuthenticated || !user?.id) return;
@@ -75,7 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await usersApi.getIsSiteAdmin(user.id.toString());
       setIsSiteAdmin(response.data.is_site_admin === true);
-      console.log("Admin check response:", response.data);
     } catch (error) {
       console.error("Failed to check admin status:", error);
       setIsSiteAdmin(false);
@@ -104,7 +100,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 parsedUserData.id.toString()
               );
               setIsSiteAdmin(response.data.is_site_admin === true);
-              console.log("Admin check on init:", response.data);
             } catch (adminError) {
               console.error(
                 "Failed to check admin status on init:",
@@ -172,7 +167,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             responseData.user.id.toString()
           );
           setIsSiteAdmin(adminResponse.data.is_site_admin === true);
-          console.log("Admin check on login:", adminResponse.data);
         } catch (adminError) {
           console.error("Failed to check admin status on login:", adminError);
           setIsSiteAdmin(false);

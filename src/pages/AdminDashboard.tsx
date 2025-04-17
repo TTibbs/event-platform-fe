@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import usersApi from "@/api/users";
+import teamsApi from "@/api/teams";
+import eventsApi from "@/api/events";
+import { User } from "@/types/users";
+import { TeamResponse, TeamMember } from "@/types/teams";
+import { Event } from "@/types/events";
 
 import {
   Sidebar,
@@ -11,16 +17,21 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   UsersIcon,
   CalendarIcon,
@@ -29,17 +40,36 @@ import {
   MessageSquareIcon,
   UserCogIcon,
   ShieldIcon,
+  EyeIcon,
+  Pencil,
+  Trash2,
+  Calendar,
+  UserPlus,
+  Plus,
 } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { user, isSiteAdmin, isAuthenticated, checkSiteAdmin } = useAuth();
+  const {
+    isSiteAdmin,
+    isAuthenticated,
+    checkSiteAdmin,
+    loading: authLoading,
+  } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("overview");
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    users: 0,
+    teams: 0,
+    events: 0,
+  });
 
   useEffect(() => {
     const verifyAccess = async () => {
       setLoading(true);
+
+      // Wait for auth to finish loading before making navigation decisions
+      if (authLoading) return;
 
       // Redirect if not authenticated
       if (!isAuthenticated) {
@@ -60,7 +90,32 @@ export default function AdminDashboard() {
     };
 
     verifyAccess();
-  }, [isAuthenticated, isSiteAdmin, navigate, checkSiteAdmin]);
+  }, [isAuthenticated, isSiteAdmin, navigate, checkSiteAdmin, authLoading]);
+
+  // Load overview stats
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [usersRes, teamsRes, eventsRes] = await Promise.all([
+          usersApi.getAllUsers(),
+          teamsApi.getAllTeams(),
+          eventsApi.getAllEvents(),
+        ]);
+
+        setStats({
+          users: usersRes.data?.length || 0,
+          teams: teamsRes.data?.length || 0,
+          events: eventsRes.data?.length || 0,
+        });
+      } catch (error) {
+        console.error("Error loading dashboard stats:", error);
+      }
+    };
+
+    if (!loading && isSiteAdmin) {
+      loadStats();
+    }
+  }, [loading, isSiteAdmin]);
 
   if (loading) {
     return (
@@ -77,7 +132,7 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case "overview":
-        return <AdminOverview />;
+        return <AdminOverview stats={stats} />;
       case "users":
         return <UsersManagement />;
       case "teams":
@@ -87,7 +142,7 @@ export default function AdminDashboard() {
       case "settings":
         return <AdminSettings />;
       default:
-        return <AdminOverview />;
+        return <AdminOverview stats={stats} />;
     }
   };
 
@@ -113,6 +168,7 @@ export default function AdminDashboard() {
                     <SidebarMenuButton
                       isActive={activeSection === "overview"}
                       onClick={() => setActiveSection("overview")}
+                      className="cursor-pointer"
                     >
                       <HomeIcon className="mr-2" />
                       <span>Overview</span>
@@ -122,6 +178,7 @@ export default function AdminDashboard() {
                     <SidebarMenuButton
                       isActive={activeSection === "users"}
                       onClick={() => setActiveSection("users")}
+                      className="cursor-pointer"
                     >
                       <UsersIcon className="mr-2" />
                       <span>Users</span>
@@ -131,6 +188,7 @@ export default function AdminDashboard() {
                     <SidebarMenuButton
                       isActive={activeSection === "teams"}
                       onClick={() => setActiveSection("teams")}
+                      className="cursor-pointer"
                     >
                       <UserCogIcon className="mr-2" />
                       <span>Teams</span>
@@ -140,6 +198,7 @@ export default function AdminDashboard() {
                     <SidebarMenuButton
                       isActive={activeSection === "events"}
                       onClick={() => setActiveSection("events")}
+                      className="cursor-pointer"
                     >
                       <CalendarIcon className="mr-2" />
                       <span>Events</span>
@@ -149,6 +208,7 @@ export default function AdminDashboard() {
                     <SidebarMenuButton
                       isActive={activeSection === "settings"}
                       onClick={() => setActiveSection("settings")}
+                      className="cursor-pointer"
                     >
                       <Settings2Icon className="mr-2" />
                       <span>Settings</span>
@@ -163,7 +223,7 @@ export default function AdminDashboard() {
             <div className="px-3 py-2">
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full cursor-pointer"
                 onClick={() => navigate("/")}
               >
                 Back to Site
@@ -187,8 +247,12 @@ export default function AdminDashboard() {
   );
 }
 
-// Placeholder components for different sections of the admin dashboard
-function AdminOverview() {
+// Updated components for different sections of the admin dashboard
+function AdminOverview({
+  stats,
+}: {
+  stats: { users: number; teams: number; events: number };
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card>
@@ -199,7 +263,7 @@ function AdminOverview() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">357</div>
+          <div className="text-3xl font-bold">{stats.users}</div>
           <p className="text-muted-foreground text-sm">
             Total registered users
           </p>
@@ -214,7 +278,7 @@ function AdminOverview() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">42</div>
+          <div className="text-3xl font-bold">{stats.teams}</div>
           <p className="text-muted-foreground text-sm">Active teams</p>
         </CardContent>
       </Card>
@@ -227,10 +291,8 @@ function AdminOverview() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">128</div>
-          <p className="text-muted-foreground text-sm">
-            Events created this month
-          </p>
+          <div className="text-3xl font-bold">{stats.events}</div>
+          <p className="text-muted-foreground text-sm">Total events</p>
         </CardContent>
       </Card>
 
@@ -269,55 +331,424 @@ function AdminOverview() {
 }
 
 function UsersManagement() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await usersApi.getAllUsers();
+        // Check if data is an array or if it's nested in a property
+        const userData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.users || [];
+        setUsers(userData);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Failed to load users. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Users Management</h2>
-      <p className="text-muted-foreground mb-6">
-        This section will contain user management functionality including
-        listing users, editing user details, and managing user permissions.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Users Management</h2>
+          <p className="text-muted-foreground">
+            Manage site users and their permissions
+          </p>
+        </div>
+        <Button className="cursor-pointer">
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add User
+        </Button>
+      </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <p>User management functionality coming soon.</p>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="flex justify-center my-12">
+          <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+        </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="pt-6 text-center text-destructive">
+            {error}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.id}</TableCell>
+                      <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {user.is_site_admin ? (
+                          <Badge className="bg-primary">Admin</Badge>
+                        ) : (
+                          <Badge variant="outline">User</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{formatDate(user.created_at)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer"
+                            title="View User"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer"
+                            title="Edit User"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer text-destructive hover:bg-destructive/10"
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
 function TeamsManagement() {
+  const [teams, setTeams] = useState<TeamResponse[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTeamsData = async () => {
+      try {
+        setLoading(true);
+        const [teamsResponse, membersResponse] = await Promise.all([
+          teamsApi.getAllTeams(),
+          teamsApi.getAllTeamMembers(),
+        ]);
+
+        // Check if data is an array or if it's nested in a property
+        const teamsData = Array.isArray(teamsResponse.data)
+          ? teamsResponse.data
+          : teamsResponse.data?.teams || [];
+
+        const membersData = Array.isArray(membersResponse.data)
+          ? membersResponse.data
+          : membersResponse.data?.members || [];
+
+        setTeams(teamsData);
+        setTeamMembers(membersData);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching teams data:", err);
+        setError("Failed to load teams. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeamsData();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getTeamMembersCount = (teamId: number) => {
+    return teamMembers.filter((member) => member.team_id === teamId).length;
+  };
+
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Teams Management</h2>
-      <p className="text-muted-foreground mb-6">
-        This section will contain team management functionality including
-        creating teams, editing team details, and managing team members.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Teams Management</h2>
+          <p className="text-muted-foreground">
+            Manage teams and their members
+          </p>
+        </div>
+        <Button className="cursor-pointer">
+          <Plus className="mr-2 h-4 w-4" />
+          Create Team
+        </Button>
+      </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <p>Team management functionality coming soon.</p>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="flex justify-center my-12">
+          <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+        </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="pt-6 text-center text-destructive">
+            {error}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Members</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teams.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6">
+                      No teams found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  teams.map((team) => (
+                    <TableRow key={team.id}>
+                      <TableCell>{team.id}</TableCell>
+                      <TableCell className="font-medium">{team.name}</TableCell>
+                      <TableCell>
+                        {team.description || (
+                          <span className="text-muted-foreground italic">
+                            No description
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {getTeamMembersCount(team.id)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(team.created_at)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer"
+                            title="View Team"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer"
+                            title="Edit Team"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer text-destructive hover:bg-destructive/10"
+                            title="Delete Team"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
 function EventsManagement() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await eventsApi.getAllEvents();
+        // Check if data is an array or if it's nested in a property
+        const eventsData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.events || [];
+        setEvents(eventsData);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+        setError("Failed to load events. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getEventStatusBadge = (status: string) => {
+    switch (status) {
+      case "published":
+        return <Badge className="bg-green-500">Published</Badge>;
+      case "draft":
+        return <Badge variant="outline">Draft</Badge>;
+      case "cancelled":
+        return <Badge variant="destructive">Cancelled</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">Events Management</h2>
-      <p className="text-muted-foreground mb-6">
-        This section will allow administrators to oversee all events, manage
-        event approvals, and handle event-related issues.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Events Management</h2>
+          <p className="text-muted-foreground">
+            Manage all events on the platform
+          </p>
+        </div>
+        <Button className="cursor-pointer">
+          <Calendar className="mr-2 h-4 w-4" />
+          Create Event
+        </Button>
+      </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <p>Event management functionality coming soon.</p>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="flex justify-center my-12">
+          <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+        </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="pt-6 text-center text-destructive">
+            {error}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Team</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created By</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-6">
+                      No events found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  events.map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell>{event.id}</TableCell>
+                      <TableCell className="font-medium">
+                        {event.title}
+                      </TableCell>
+                      <TableCell>{event.team_name}</TableCell>
+                      <TableCell>{formatDate(event.start_time)}</TableCell>
+                      <TableCell>{getEventStatusBadge(event.status)}</TableCell>
+                      <TableCell>{event.creator_username}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer"
+                            title="View Event"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer"
+                            title="Edit Event"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="size-8 cursor-pointer text-destructive hover:bg-destructive/10"
+                            title="Delete Event"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
