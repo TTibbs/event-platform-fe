@@ -10,10 +10,10 @@ export default function EventDetails() {
   const { id } = useParams();
   const { user, isAuthenticated } = useAuth();
   const [event, setEvent] = useState<EventDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [canEdit, setCanEdit] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [editedEvent, setEditedEvent] = useState<Partial<EventDetail>>({});
 
   // Fetch event data

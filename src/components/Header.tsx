@@ -27,8 +27,8 @@ import {
 const Header = () => {
   const { isAuthenticated, user, logout, isSiteAdmin, checkSiteAdmin } =
     useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isTeamMember, setIsTeamMember] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
   const [currentUserData, setCurrentUserData] = useState(user);
   const location = useLocation();
 

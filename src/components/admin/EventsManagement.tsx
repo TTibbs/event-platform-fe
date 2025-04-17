@@ -19,7 +19,7 @@ interface EventsManagementProps {
 }
 
 export default function EventsManagement({ events }: EventsManagementProps) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const formatDate = (dateString: string) => {

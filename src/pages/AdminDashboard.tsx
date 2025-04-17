@@ -58,15 +58,19 @@ export default function AdminDashboard() {
     loading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("overview");
-  const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<string>("overview");
+  const [loading, setLoading] = useState<boolean>(true);
   const [dashboardData, setDashboardData] = useState<AdminDashboardData>({
     users: [],
     teams: [],
     teamMembers: [],
     events: [],
   });
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<{
+    users: number;
+    teams: number;
+    events: number;
+  }>({
     users: 0,
     teams: 0,
     events: 0,

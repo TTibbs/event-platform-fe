@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Event, UpdateEventParams } from "@/types/events";
+import { Event, EventDetail, UpdateEventParams } from "@/types/events";
 
 // Define a simplified user interface for auth context
 interface AuthUser {
@@ -51,20 +51,23 @@ interface EventProps {
 export function EventCard({ event, userId }: EventProps) {
   const { user } = useAuth() as { user: AuthUser | null };
   const navigate = useNavigate();
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
+  const [registrationSuccess, setRegistrationSuccess] =
+    useState<boolean>(false);
   const [registrationError, setRegistrationError] = useState<string | null>(
     null
   );
-  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
-  const [checkingRegistration, setCheckingRegistration] = useState(true);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] =
+    useState<boolean>(false);
+  const [checkingRegistration, setCheckingRegistration] =
+    useState<boolean>(true);
 
   // Edit event state
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [updateSuccess, setUpdateSuccess] = useState<boolean>(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [editedEvent, setEditedEvent] = useState({
+  const [editedEvent, setEditedEvent] = useState<Partial<EventDetail>>({
     title: event.title,
     description: event.description,
     location: event.location,
@@ -78,8 +81,8 @@ export function EventCard({ event, userId }: EventProps) {
   });
 
   // Permission states
-  const [canEdit, setCanEdit] = useState(false);
-  const [checkingPermissions, setCheckingPermissions] = useState(true);
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [checkingPermissions, setCheckingPermissions] = useState<boolean>(true);
 
   const formattedStartDate = format(new Date(event.start_time), "MMM d, yyyy");
   const formattedStartTime = format(new Date(event.start_time), "h:mm a");
@@ -220,7 +223,7 @@ export function EventCard({ event, userId }: EventProps) {
     setUpdateError(null);
 
     try {
-      const updateParams: UpdateEventParams = editedEvent;
+      const updateParams: UpdateEventParams = editedEvent as UpdateEventParams;
       await eventsApi.updateEvent(event.id.toString(), updateParams);
       setUpdateSuccess(true);
       // Close the modal after 1 second to show success
@@ -463,7 +466,7 @@ export function EventCard({ event, userId }: EventProps) {
                 type="number"
                 min="0"
                 step="0.01"
-                value={editedEvent.price}
+                value={editedEvent.price ?? ""}
                 onChange={handleInputChange}
                 className="col-span-3"
               />

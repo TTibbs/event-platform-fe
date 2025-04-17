@@ -10,9 +10,9 @@ import { Event } from "@/types/events";
 export default function Dashboard() {
   const [draftEvents, setDraftEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isTeamMember, setIsTeamMember] = useState(false);
+  const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 

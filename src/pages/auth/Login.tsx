@@ -17,10 +17,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoginParams } from "@/types/auth";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const { login, loading, error: authError } = useAuth();
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState<string>("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -33,7 +33,7 @@ import { EventRegistration } from "@/types/events";
 function EventsCalendar({ userId }: { userId: string }) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedDayEvents, setSelectedDayEvents] = useState<
     EventRegistration[]
   >([]);

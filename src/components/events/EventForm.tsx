@@ -41,7 +41,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function EventForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 

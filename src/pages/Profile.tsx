@@ -21,13 +21,13 @@ import { UserTeam } from "@/types/users";
 export default function Profile() {
   const { user, updateUserData } = useAuth();
   const [teams, setTeams] = useState<UserTeam[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [profileImageUrl, setProfileImageUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [profileImageUrl, setProfileImageUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [userData, setUserData] = useState<any>(null);
-  const [isTeamMember, setIsTeamMember] = useState(false);
+  const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {

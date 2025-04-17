@@ -10,9 +10,9 @@ import { Event } from "@/types/events";
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [canCreateEvent, setCanCreateEvent] = useState(false);
+  const [canCreateEvent, setCanCreateEvent] = useState<boolean>(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   // Get current user ID (if authenticated)

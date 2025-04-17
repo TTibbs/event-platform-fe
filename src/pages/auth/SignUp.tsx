@@ -18,7 +18,7 @@ import { Loader2 } from "lucide-react";
 import { RegisterParams } from "@/types/auth";
 
 const SignUp = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<RegisterParams>({
     username: "",
     email: "",
     password: "",
@@ -26,8 +26,8 @@ const SignUp = () => {
     teamName: "",
     teamDescription: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
