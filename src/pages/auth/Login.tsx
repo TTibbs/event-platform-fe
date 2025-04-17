@@ -14,6 +14,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { LoginParams } from "@/types/auth";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -33,7 +34,8 @@ const Login = () => {
     setFormError("");
 
     try {
-      await login(username, password);
+      const loginParams: LoginParams = { username, password };
+      await login(loginParams.username, loginParams.password);
       navigate("/dashboard");
     } catch (err: any) {
       // The error is already handled by the auth context

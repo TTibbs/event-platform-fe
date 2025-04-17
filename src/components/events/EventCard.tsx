@@ -33,45 +33,22 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Event, UpdateEventParams } from "@/types/events";
 
-interface Team {
-  id: number;
-  name: string;
-  role: string;
-}
-
-interface User {
+// Define a simplified user interface for auth context
+interface AuthUser {
   id: number;
   username: string;
-  role: string;
-  teams?: Team[];
+  role?: string;
 }
 
 interface EventProps {
-  event: {
-    id: number;
-    title: string;
-    description: string;
-    location: string;
-    start_time: string;
-    end_time: string;
-    price: number;
-    max_attendees: number;
-    status: string;
-    event_type: string;
-    creator_username: string;
-    team_name: string;
-    is_public: boolean;
-    created_at: string;
-    updated_at: string;
-    created_by: number;
-    team_id: number;
-  };
+  event: Event;
   userId?: string | number;
 }
 
 export function EventCard({ event, userId }: EventProps) {
-  const { user } = useAuth() as { user: User | null };
+  const { user } = useAuth() as { user: AuthUser | null };
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -242,7 +219,8 @@ export function EventCard({ event, userId }: EventProps) {
     setUpdateError(null);
 
     try {
-      await eventsApi.updateEvent(event.id.toString(), editedEvent);
+      const updateParams: UpdateEventParams = editedEvent;
+      await eventsApi.updateEvent(event.id.toString(), updateParams);
       setUpdateSuccess(true);
       // Close the modal after 1 second to show success
       setTimeout(() => {

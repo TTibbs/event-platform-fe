@@ -16,17 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import EventsCalendar from "@/components/events/EventsCalendar";
-
-interface Team {
-  team_id: number;
-  team_name: string;
-  team_description: string;
-  role: string;
-}
+import { UserTeam } from "@/types/users";
 
 export default function Profile() {
   const { user } = useAuth();
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<UserTeam[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -204,7 +198,7 @@ export default function Profile() {
           <CardContent>
             {teams && teams.length > 0 ? (
               <div className="space-y-4">
-                {teams.map((team: Team) => (
+                {teams.map((team: UserTeam) => (
                   <div key={team.team_id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium">{team.team_name}</h3>

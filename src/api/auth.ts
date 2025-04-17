@@ -1,22 +1,5 @@
 import axiosClient from "@/api/axiosClient";
-
-interface RegisterParams {
-  username: string;
-  email: string;
-  password: string;
-  isEventOrganiser?: boolean;
-  teamName?: string;
-  teamDescription?: string;
-}
-
-interface LoginParams {
-  username: string;
-  password: string;
-}
-
-interface RefreshTokenParams {
-  refreshToken: string;
-}
+import { RegisterParams, LoginParams, RefreshTokenParams } from "@/types/auth";
 
 const authApi = {
   register: (params: RegisterParams) => {

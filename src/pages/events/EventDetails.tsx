@@ -4,52 +4,17 @@ import usersApi from "@/api/users";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-
-// Define Event interface
-interface Event {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  start_time: string;
-  end_time: string;
-  price: number | null;
-  max_attendees: number;
-  status: "draft" | "published" | "cancelled";
-  event_type: string;
-  is_public: boolean;
-  team_id: number;
-  created_at: string;
-  updated_at: string;
-  team_name?: string;
-  creator_username?: string;
-  created_by?: number;
-}
-
-// Use the same interface structure from events.ts
-interface UpdateEventParams {
-  title?: string;
-  description?: string;
-  location?: string;
-  start_time?: string;
-  end_time?: string;
-  price?: number;
-  max_attendees?: number;
-  status?: "draft" | "published" | "cancelled";
-  event_type?: string;
-  is_public?: boolean;
-  team_id?: number | string;
-}
+import { EventDetail, UpdateEventParams } from "@/types/events";
 
 export default function EventDetails() {
   const { id } = useParams();
   const { user, isAuthenticated } = useAuth();
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<EventDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editedEvent, setEditedEvent] = useState<Partial<Event>>({});
+  const [editedEvent, setEditedEvent] = useState<Partial<EventDetail>>({});
 
   // Fetch event data
   useEffect(() => {
@@ -167,8 +132,6 @@ export default function EventDetails() {
     }
   };
 
-  console.log(event);
-
   // Handle form input changes
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -199,7 +162,11 @@ export default function EventDetails() {
         // Handle null price by setting it to undefined for the API
         price: editedEvent.price !== null ? editedEvent.price : undefined,
         max_attendees: editedEvent.max_attendees,
-        status: editedEvent.status,
+        status: editedEvent.status as
+          | "draft"
+          | "published"
+          | "cancelled"
+          | undefined,
         is_public: editedEvent.is_public,
       };
 

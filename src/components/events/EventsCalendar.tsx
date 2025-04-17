@@ -5,9 +5,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, CalendarIcon, ListIcon } from "lucide-react";
+import {
+  MoreVertical,
+  Calendar as CalendarIcon,
+  ListIcon,
+  Share2,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, isFuture, isPast, compareAsc } from "date-fns";
 import usersApi from "@/api/users";
@@ -22,29 +28,15 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface Registration {
-  id: number;
-  event_id: number;
-  user_id: number;
-  registration_time: string;
-  status: string;
-  start_time: string;
-  end_time: string;
-  event_title: string;
-  event_description: string;
-  event_location: string;
-  event_status: string;
-  team_name: string;
-}
+import { EventRegistration } from "@/types/events";
 
 function EventsCalendar({ userId }: { userId: string }) {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDayEvents, setSelectedDayEvents] = useState<Registration[]>(
-    []
-  );
+  const [selectedDayEvents, setSelectedDayEvents] = useState<
+    EventRegistration[]
+  >([]);
   const navigate = useNavigate();
 
   // Fetch user's event registrations
@@ -114,6 +106,76 @@ function EventsCalendar({ userId }: { userId: string }) {
     navigate(`/events/${eventId}`);
   };
 
+  // Add to Google Calendar
+  const addToGoogleCalendar = (registration: EventRegistration) => {
+    try {
+      // Format dates for Google Calendar URL
+      const startTime = new Date(registration.start_time)
+        .toISOString()
+        .replace(/-|:|\.\d+/g, "");
+      const endTime = new Date(registration.end_time)
+        .toISOString()
+        .replace(/-|:|\.\d+/g, "");
+
+      // Create Google Calendar URL with event details
+      const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        registration.event_title
+      )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
+        registration.event_description || ""
+      )}&location=${encodeURIComponent(
+        registration.event_location || ""
+      )}&sf=true&output=xml`;
+
+      // Open in new window
+      window.open(url, "_blank");
+
+      toast.success("Opening Google Calendar...");
+    } catch (error) {
+      console.error("Failed to add event to Google Calendar:", error);
+      toast.error("Failed to add event to Google Calendar");
+    }
+  };
+
+  // Add to Apple Calendar (iCal)
+  const addToAppleCalendar = (registration: EventRegistration) => {
+    try {
+      // Format dates
+      const startDate = new Date(registration.start_time);
+      const endDate = new Date(registration.end_time);
+
+      // Create iCal content
+      const icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        `DTSTART:${startDate.toISOString().replace(/-|:|\.\d+/g, "")}`,
+        `DTEND:${endDate.toISOString().replace(/-|:|\.\d+/g, "")}`,
+        `SUMMARY:${registration.event_title}`,
+        `DESCRIPTION:${registration.event_description || ""}`,
+        `LOCATION:${registration.event_location || ""}`,
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\n");
+
+      // Create download link
+      const blob = new Blob([icsContent], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${registration.event_title}.ics`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Calendar file downloaded");
+    } catch (error) {
+      console.error("Failed to generate calendar file:", error);
+      toast.error("Failed to generate calendar file");
+    }
+  };
+
   // Sort and group events into upcoming and past
   const upcomingEvents = registrations
     .filter(
@@ -126,7 +188,7 @@ function EventsCalendar({ userId }: { userId: string }) {
     .sort((a, b) => compareAsc(new Date(b.start_time), new Date(a.start_time)));
 
   // Event card component to reuse for both views
-  const EventCard = ({ registration }: { registration: Registration }) => (
+  const EventCard = ({ registration }: { registration: EventRegistration }) => (
     <div
       key={registration.id}
       className="p-3 border rounded-lg flex justify-between items-start mb-3"
@@ -156,6 +218,16 @@ function EventsCalendar({ userId }: { userId: string }) {
           >
             View details
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => addToGoogleCalendar(registration)}>
+            <Share2 className="h-4 w-4 mr-2" />
+            Add to Google Calendar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => addToAppleCalendar(registration)}>
+            <Share2 className="h-4 w-4 mr-2" />
+            Download for Apple Calendar
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => handleCancelRegistration(registration.id)}
             className="text-red-600"

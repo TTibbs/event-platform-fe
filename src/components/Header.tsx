@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Menu, X, User, Calendar, LayoutDashboard, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import teamsApi from "@/api/teams";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,26 @@ import {
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTeamMember, setIsTeamMember] = useState(false);
+
+  useEffect(() => {
+    const checkTeamMembership = async () => {
+      if (!user?.id) return;
+
+      try {
+        const response = await teamsApi.getMemberByUserId(user.id.toString());
+        // If we get a successful response, the user is a team member
+        setIsTeamMember(!!response.data);
+      } catch (err) {
+        // If we get an error, user is not a team member
+        setIsTeamMember(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      checkTeamMembership();
+    }
+  }, [user, isAuthenticated]);
 
   // Generate avatar fallback from username
   const getAvatarFallback = () => {
@@ -52,12 +73,14 @@ const Header = () => {
             <nav className="hidden md:flex items-center space-x-4">
               {isAuthenticated ? (
                 <>
-                  <Link
-                    to="/dashboard"
-                    className="text-sm font-medium hover:text-primary"
-                  >
-                    Dashboard
-                  </Link>
+                  {isTeamMember && (
+                    <Link
+                      to="/dashboard"
+                      className="text-sm font-medium hover:text-primary"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
                   <Link
                     to="/events"
                     className="text-sm font-medium hover:text-primary"
@@ -88,15 +111,20 @@ const Header = () => {
                               Profile
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            asChild
-                            className="py-2 hover:bg-muted rounded-md cursor-pointer"
-                          >
-                            <Link to="/dashboard" className="flex items-center">
-                              <LayoutDashboard className="mr-2 h-4 w-4" />
-                              Dashboard
-                            </Link>
-                          </DropdownMenuItem>
+                          {isTeamMember && (
+                            <DropdownMenuItem
+                              asChild
+                              className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                            >
+                              <Link
+                                to="/dashboard"
+                                className="flex items-center"
+                              >
+                                <LayoutDashboard className="mr-2 h-4 w-4" />
+                                Dashboard
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             asChild
                             className="py-2 hover:bg-muted rounded-md cursor-pointer"
@@ -164,15 +192,17 @@ const Header = () => {
                           Profile
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        asChild
-                        className="py-2 hover:bg-muted rounded-md cursor-pointer"
-                      >
-                        <Link to="/dashboard" className="flex items-center">
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
-                          Dashboard
-                        </Link>
-                      </DropdownMenuItem>
+                      {isTeamMember && (
+                        <DropdownMenuItem
+                          asChild
+                          className="py-2 hover:bg-muted rounded-md cursor-pointer"
+                        >
+                          <Link to="/dashboard" className="flex items-center">
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         asChild
                         className="py-2 hover:bg-muted rounded-md cursor-pointer"
@@ -227,13 +257,15 @@ const Header = () => {
                   <div className="font-medium">{user?.username}</div>
                 </div>
                 <div className="grid gap-2">
-                  <Link
-                    to="/dashboard"
-                    className="block py-2 px-3 rounded-md hover:bg-muted"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
+                  {isTeamMember && (
+                    <Link
+                      to="/dashboard"
+                      className="block py-2 px-3 rounded-md hover:bg-muted"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                  )}
                   <Link
                     to="/events"
                     className="block py-2 px-3 rounded-md hover:bg-muted"

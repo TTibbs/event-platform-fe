@@ -1,14 +1,5 @@
 import axiosClient from "@/api/axiosClient";
-
-interface CreateTeamParams {
-  name: string;
-  [key: string]: any;
-}
-
-interface AddMemberParams {
-  team_id: string;
-  role: string;
-}
+import { CreateTeamParams, AddMemberParams } from "@/types/teams";
 
 const teamsApi = {
   getAllTeams: () => {

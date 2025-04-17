@@ -1,30 +1,6 @@
 import { EventCard } from "@/components/events/EventCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface Event {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  start_time: string;
-  end_time: string;
-  price: number;
-  max_attendees: number;
-  status: string;
-  event_type: string;
-  creator_username: string;
-  team_name: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: number;
-  team_id: number;
-}
-
-interface EventsListProps {
-  events: Event[];
-  userId?: string | number;
-}
+import { EventsListProps } from "@/types/events";
 
 export function EventsList({ events, userId }: EventsListProps) {
   if (!events.length) {

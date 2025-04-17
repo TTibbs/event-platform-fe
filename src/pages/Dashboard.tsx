@@ -5,26 +5,7 @@ import { EventCard } from "@/components/events/EventCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-interface Event {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  start_time: string;
-  end_time: string;
-  price: number;
-  max_attendees: number;
-  status: string;
-  event_type: string;
-  creator_username: string;
-  team_name: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: number;
-  team_id: number;
-}
+import { Event } from "@/types/events";
 
 export default function Dashboard() {
   const [draftEvents, setDraftEvents] = useState<Event[]>([]);
@@ -47,11 +28,13 @@ export default function Dashboard() {
       } catch (err) {
         // If we get an error, user is not a team member
         setIsTeamMember(false);
+        // Redirect non-team members to profile page
+        navigate("/profile");
       }
     };
 
     checkTeamMembership();
-  }, [user]);
+  }, [user, navigate]);
 
   useEffect(() => {
     const fetchDraftEvents = async () => {
@@ -76,6 +59,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchAllEvents = async () => {
+      if (!isTeamMember) return; // Skip fetching if not a team member
+
       setLoading(true);
       try {
         const response = await eventsApi.getAllEvents();
@@ -90,8 +75,17 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-    fetchAllEvents();
-  }, []);
+
+    if (isTeamMember) {
+      fetchAllEvents();
+    }
+  }, [isTeamMember]);
+
+  // If user isn't a team member, they'll be redirected by the useEffect
+  // This is just a fallback
+  if (!isTeamMember && !loading) {
+    return null;
+  }
 
   if (loading) {
     return (

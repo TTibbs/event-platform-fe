@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Layout from "@/components/Layout";
+import Home from "./pages/Home";
 import Login from "@/pages/auth/Login";
 import SignUp from "@/pages/auth/SignUp";
 import Events from "@/pages/events/Events";
@@ -19,14 +20,7 @@ function App() {
           <div className="min-h-screen">
             <Layout>
               <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <div className="text-center py-10">
-                      Welcome to EventsApp
-                    </div>
-                  }
-                />
+                <Route path="/" element={<Home />} />
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/signup" element={<SignUp />} />
                 <Route path="/dashboard" element={<Dashboard />} />

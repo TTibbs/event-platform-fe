@@ -1,12 +1,5 @@
 import axiosClient from "@/api/axiosClient";
-
-interface CreateTicketParams {
-  [key: string]: any;
-}
-
-interface UpdateTicketParams {
-  [key: string]: any;
-}
+import { CreateTicketParams, UpdateTicketParams } from "@/types/tickets";
 
 const ticketsApi = {
   getAllTickets: () => {

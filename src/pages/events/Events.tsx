@@ -1,38 +1,56 @@
 import { useState, useEffect } from "react";
 import eventsApi from "@/api/events";
+import teamsApi from "@/api/teams";
 import { EventsList } from "@/components/events/EventsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-interface Event {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  start_time: string;
-  end_time: string;
-  price: number;
-  max_attendees: number;
-  status: string;
-  event_type: string;
-  creator_username: string;
-  team_name: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: number;
-  team_id: number;
-}
+import { Event } from "@/types/events";
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canCreateEvent, setCanCreateEvent] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   // Get current user ID (if authenticated)
   const currentUserId = user?.id;
+
+  // Check if user can create events (team member with admin or event organiser role)
+  useEffect(() => {
+    const checkCreateEventPermission = async () => {
+      if (!user?.id) {
+        setCanCreateEvent(false);
+        return;
+      }
+
+      try {
+        // Check if user is a team member
+        const memberResponse = await teamsApi.getMemberByUserId(
+          user.id.toString()
+        );
+        if (!memberResponse.data) {
+          setCanCreateEvent(false);
+          return;
+        }
+
+        // Check user's role
+        const roleResponse = await teamsApi.getMemberRoleByUserId(
+          user.id.toString()
+        );
+        const role = roleResponse.data?.role;
+
+        // Allow creating events if admin or event organiser
+        setCanCreateEvent(role === "admin" || role === "event organiser");
+      } catch (err) {
+        // If error, user can't create events
+        setCanCreateEvent(false);
+      }
+    };
+
+    checkCreateEventPermission();
+  }, [user]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -75,9 +93,13 @@ export default function Events() {
         </p>
       </header>
 
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => navigate("/events/create")}>Create Event</Button>
-      </div>
+      {canCreateEvent && (
+        <div className="flex justify-end mb-4">
+          <Button onClick={() => navigate("/events/create")}>
+            Create Event
+          </Button>
+        </div>
+      )}
 
       <EventsList events={events} userId={currentUserId} />
     </div>

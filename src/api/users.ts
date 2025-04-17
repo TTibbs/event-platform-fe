@@ -1,8 +1,5 @@
 import axiosClient from "@/api/axiosClient";
-
-interface UpdateUserParams {
-  [key: string | number]: any;
-}
+import { UpdateUserParams } from "@/types/users";
 
 const usersApi = {
   getAllUsers: () => {

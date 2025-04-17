@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { RegisterParams } from "@/types/auth";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -53,7 +54,7 @@ const SignUp = () => {
       const { username, email, password, isEventOrganiser } = formData;
 
       // Create payload with conditional team fields
-      const payload = {
+      const payload: RegisterParams = {
         username,
         email,
         password,
