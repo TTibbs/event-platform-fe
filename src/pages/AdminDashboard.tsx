@@ -70,10 +70,12 @@ export default function AdminDashboard() {
     users: number;
     teams: number;
     events: number;
+    teamMembers: number;
   }>({
     users: 0,
     teams: 0,
     events: 0,
+    teamMembers: 0,
   });
 
   useEffect(() => {
@@ -149,6 +151,7 @@ export default function AdminDashboard() {
             users: data.total_users || 0,
             teams: data.total_teams || 0,
             events: allEvents.length,
+            teamMembers: data.total_team_members || 0,
           });
         }
       } catch (error) {
@@ -176,16 +179,37 @@ export default function AdminDashboard() {
       case "overview":
         return <AdminOverview stats={stats} />;
       case "users":
-        return <UsersManagement users={dashboardData.users} />;
+        return (
+          <UsersManagement
+            users={dashboardData.users}
+            totalUsers={stats.users}
+          />
+        );
       case "teams":
         return (
           <TeamsManagement
             teams={dashboardData.teams}
             teamMembers={dashboardData.teamMembers}
+            totalTeams={stats.teams}
+            totalTeamMembers={stats.teamMembers}
           />
         );
       case "events":
-        return <EventsManagement events={dashboardData.events} />;
+        // Count published and draft events separately
+        const publishedEvents = dashboardData.events.filter(
+          (event) => event.status === "published"
+        );
+        const draftEvents = dashboardData.events.filter(
+          (event) => event.status === "draft"
+        );
+
+        return (
+          <EventsManagement
+            events={dashboardData.events}
+            totalEvents={publishedEvents.length}
+            draftEventsCount={draftEvents.length}
+          />
+        );
       case "settings":
         return <AdminSettings />;
       default:
@@ -298,7 +322,7 @@ export default function AdminDashboard() {
 function AdminOverview({
   stats,
 }: {
-  stats: { users: number; teams: number; events: number };
+  stats: { users: number; teams: number; events: number; teamMembers: number };
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -340,6 +364,21 @@ function AdminOverview({
         <CardContent>
           <div className="text-3xl font-bold">{stats.events}</div>
           <p className="text-muted-foreground text-sm">Total events</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <UsersIcon className="mr-2 h-5 w-5" />
+            Team Members
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold">{stats.teamMembers}</div>
+          <p className="text-muted-foreground text-sm">
+            Active team memberships
+          </p>
         </CardContent>
       </Card>
 

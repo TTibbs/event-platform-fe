@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, UpdateUserParams, PromoteToAdminParams } from "@/types/users";
 import { UserPlus, EyeIcon, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +39,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface UsersManagementProps {
   users: User[];
+  totalUsers?: number;
 }
 
 export default function UsersManagement({
   users: initialUsers,
+  totalUsers: initialTotalUsers,
 }: UsersManagementProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [totalUsers, setTotalUsers] = useState<number>(
+    initialTotalUsers || initialUsers.length
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -67,6 +72,25 @@ export default function UsersManagement({
     email?: string;
     password?: string;
   }>({});
+
+  // Fetch the total count from the admin dashboard if not provided
+  useEffect(() => {
+    const fetchTotalCount = async () => {
+      if (initialTotalUsers) {
+        return; // If count is already provided, don't fetch
+      }
+
+      try {
+        const response = await usersApi.getAdminDashboardData();
+        const { total_users } = response.data.data;
+        setTotalUsers(total_users);
+      } catch (error: unknown) {
+        console.error("Failed to fetch total user count:", error);
+      }
+    };
+
+    fetchTotalCount();
+  }, [initialTotalUsers]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -142,17 +166,20 @@ export default function UsersManagement({
       };
 
       setUsers((prevUsers) => [...prevUsers, createdUser]);
+      setTotalUsers((prev) => prev + 1);
       setDialogOpen(false);
       setNewUser({ username: "", email: "", password: "" });
 
       // Show success message
       toast.success(`User ${newUser.username} created successfully`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error.response?.data?.msg ||
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to create user";
+        typeof error === "object" && error !== null
+          ? (error as any).response?.data?.msg ||
+            (error as any).response?.data?.message ||
+            (error as any).message ||
+            "Failed to create user"
+          : "Failed to create user";
 
       setError(errorMessage);
       toast.error(errorMessage);
@@ -177,6 +204,7 @@ export default function UsersManagement({
       setUsers((prevUsers) =>
         prevUsers.filter((user) => user.id !== userToDelete.id)
       );
+      setTotalUsers((prev) => Math.max(0, prev - 1));
 
       // Get the token from localStorage
       const token = localStorage.getItem("token");
@@ -194,15 +222,18 @@ export default function UsersManagement({
 
       setDeleteDialogOpen(false);
       setUserToDelete(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Revert the optimistic update on error
       setUsers(initialUsers);
+      setTotalUsers(initialTotalUsers || initialUsers.length);
 
       const errorMessage =
-        error.response?.data?.msg ||
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to delete user";
+        typeof error === "object" && error !== null
+          ? (error as any).response?.data?.msg ||
+            (error as any).response?.data?.message ||
+            (error as any).message ||
+            "Failed to delete user"
+          : "Failed to delete user";
 
       setError(errorMessage);
       toast.error(errorMessage);
@@ -322,6 +353,7 @@ export default function UsersManagement({
     } catch (error: any) {
       // Revert the optimistic update on error
       setUsers(initialUsers);
+      setTotalUsers(initialTotalUsers || initialUsers.length);
 
       const errorMessage =
         error.response?.data?.msg ||
@@ -340,7 +372,7 @@ export default function UsersManagement({
     <>
       <ManagementBase
         title="Users Management"
-        description="Manage site users and their permissions"
+        description={`Manage site users and their permissions (${totalUsers} total)`}
         addButtonLabel="Add User"
         addButtonIcon={<UserPlus className="mr-2 h-4 w-4" />}
         onAddButtonClick={() => setDialogOpen(true)}
