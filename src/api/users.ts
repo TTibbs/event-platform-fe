@@ -1,5 +1,9 @@
 import axiosClient from "@/api/axiosClient";
-import { UpdateUserParams } from "@/types/users";
+import {
+  UpdateUserParams,
+  CreateUserParams,
+  PromoteToAdminParams,
+} from "@/types/users";
 
 const usersApi = {
   getAllUsers: () => {
@@ -26,8 +30,16 @@ const usersApi = {
     return axiosClient.get(`/users/${id}/registrations`);
   },
 
+  createUser: (params: CreateUserParams) => {
+    return axiosClient.post("/users", params);
+  },
+
   updateUser: (id: string, params: UpdateUserParams) => {
     return axiosClient.patch(`/users/${id}`, params);
+  },
+
+  promoteToAdmin: (id: string, params: PromoteToAdminParams) => {
+    return axiosClient.patch(`/admin/users/${id}`, params);
   },
 
   deleteUser: (id: string) => {

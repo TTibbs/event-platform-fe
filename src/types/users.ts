@@ -19,6 +19,16 @@ export interface UpdateUserParams {
   [key: string | number]: any;
 }
 
+export interface CreateUserParams {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface PromoteToAdminParams {
+  is_site_admin: boolean;
+}
+
 // Type representing the team information included in user responses
 export interface UserTeam {
   team_id: number;
