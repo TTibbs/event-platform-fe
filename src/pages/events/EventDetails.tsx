@@ -1,6 +1,7 @@
 import eventsApi from "@/api/events";
 import teamsApi from "@/api/teams";
 import usersApi from "@/api/users";
+import ticketsApi from "@/api/tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -21,6 +22,73 @@ export default function EventDetails() {
   const [editedEvent, setEditedEvent] = useState<Partial<EventDetail>>({});
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [hasPaidTicket, setHasPaidTicket] = useState<boolean>(false);
+  const [lastChecked, setLastChecked] = useState<number>(Date.now());
+
+  // Store payment status in localStorage
+  const getTicketCacheKey = () => {
+    if (!user?.id || !id) return null;
+    return `ticket_paid_${user.id}_${id}`;
+  };
+
+  // Check local storage first for a cached payment status
+  useEffect(() => {
+    const ticketCacheKey = getTicketCacheKey();
+    if (ticketCacheKey) {
+      const cachedStatus = localStorage.getItem(ticketCacheKey);
+      if (cachedStatus === "true") {
+        console.log("Found cached paid ticket status, marking as paid");
+        setHasPaidTicket(true);
+        setIsRegistered(true);
+      }
+    }
+  }, [user?.id, id]);
+
+  // Force a refresh when component is focused (e.g., after payment return)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log("Window focused, checking for registration updates");
+      setLastChecked(Date.now());
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  // Check if returning from payment flow
+  useEffect(() => {
+    const checkPaymentStatus = () => {
+      // Get stored event ID (the one that was just paid for)
+      const pendingEventId = sessionStorage.getItem("pendingEventTicket");
+      const refreshFlag = sessionStorage.getItem("refreshTicketStatus");
+
+      if (refreshFlag === "true") {
+        // Force refresh registration status
+        console.log("Payment completed, refreshing status");
+        setLastChecked(Date.now());
+        sessionStorage.removeItem("refreshTicketStatus");
+      }
+
+      // If this is the specific event that was paid for
+      if (pendingEventId === id && user?.id) {
+        console.log(`This event (${id}) was just paid for by user ${user.id}`);
+
+        // Immediately mark as paid to prevent flicker
+        setIsRegistered(true);
+        setHasPaidTicket(true);
+
+        // Cache the paid status in localStorage
+        const ticketCacheKey = getTicketCacheKey();
+        if (ticketCacheKey) {
+          localStorage.setItem(ticketCacheKey, "true");
+        }
+
+        // Clear the pendingEventTicket
+        sessionStorage.removeItem("pendingEventTicket");
+      }
+    };
+
+    checkPaymentStatus();
+  }, [id, user?.id]);
 
   // Fetch event data
   useEffect(() => {
@@ -62,7 +130,7 @@ export default function EventDetails() {
     };
 
     fetchEvent();
-  }, [id, isAuthenticated, user]);
+  }, [id, isAuthenticated, user, lastChecked]);
 
   // Check if user has permission to edit this event
   const checkEditPermission = async (teamId: number) => {
@@ -148,26 +216,54 @@ export default function EventDetails() {
     if (!user?.id) return;
 
     try {
+      console.log(
+        `Checking registration for event ${eventId}, user ${user.id}`
+      );
+
       // Check if registered
       const isUserRegistered = await eventsApi.isUserRegistered(
         eventId.toString(),
         user.id.toString()
       );
       setIsRegistered(isUserRegistered);
+      console.log(`User registered status: ${isUserRegistered}`);
 
       // If registered, check if they have a paid ticket
-      if (isUserRegistered) {
+      if (isUserRegistered && event?.price && event.price > 0) {
         try {
-          const ticketsResponse = await fetch(
-            `/api/tickets/user/${user.id}/event/${eventId}`
-          );
-          const ticketsData = await ticketsResponse.json();
+          // Use multiple retries for ticket status check (in case of backend delay)
+          let attempts = 0;
+          let hasPaid = false;
 
-          // Check if there's at least one paid ticket
-          setHasPaidTicket(
-            ticketsData.tickets &&
-              ticketsData.tickets.some((ticket: any) => ticket.paid === true)
-          );
+          while (attempts < 3 && !hasPaid) {
+            console.log(`Checking payment status, attempt ${attempts + 1}`);
+
+            hasPaid = await ticketsApi.hasUserPaidForEvent(
+              user.id.toString(),
+              eventId.toString()
+            );
+
+            if (hasPaid) {
+              console.log("Found paid ticket!");
+              break;
+            }
+
+            // Wait between retries
+            if (!hasPaid && attempts < 2) {
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+
+            attempts++;
+          }
+
+          // Update state based on final status
+          setHasPaidTicket(hasPaid);
+
+          // Cache the result in localStorage
+          const ticketCacheKey = getTicketCacheKey();
+          if (hasPaid && ticketCacheKey) {
+            localStorage.setItem(ticketCacheKey, "true");
+          }
         } catch (error) {
           console.error("Failed to check ticket status:", error);
         }
@@ -359,20 +455,27 @@ export default function EventDetails() {
                     : "Purchase your ticket to attend this event."}
                 </p>
 
-                {(!isRegistered || !hasPaidTicket) && (
-                  <div className="flex items-center gap-4">
-                    <p className="font-medium text-lg">
-                      ${(event.price ?? 0).toFixed(2)}
-                    </p>
-                    <StripeTicketCheckout
-                      event={event}
-                      buttonText={
-                        isRegistered ? "Complete Purchase" : "Buy Ticket"
-                      }
-                      disabled={event.status !== "published"}
-                    />
-                  </div>
-                )}
+                <div className="flex items-center gap-4">
+                  <p className="font-medium text-lg">
+                    ${(event.price ?? 0).toFixed(2)}
+                  </p>
+                  <StripeTicketCheckout
+                    event={event}
+                    buttonText={
+                      hasPaidTicket
+                        ? "Ticket Purchased"
+                        : isRegistered
+                        ? "Complete Purchase"
+                        : "Buy Ticket"
+                    }
+                    disabled={event.status !== "published" || hasPaidTicket}
+                    className={`${
+                      hasPaidTicket
+                        ? "bg-green-600 hover:bg-green-600 text-white"
+                        : ""
+                    } disabled:cursor-not-allowed`}
+                  />
+                </div>
 
                 {event.status !== "published" && (
                   <p className="text-sm text-muted-foreground mt-2">

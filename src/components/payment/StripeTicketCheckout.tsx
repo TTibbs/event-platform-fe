@@ -47,6 +47,9 @@ export default function StripeTicketCheckout({
         // Store the event ID in session storage to display a success message on return
         sessionStorage.setItem("pendingEventTicket", event.id.toString());
 
+        // Also set a flag to refresh ticket status when user returns
+        sessionStorage.setItem("refreshTicketStatus", "true");
+
         // Redirect to Stripe-hosted checkout page
         window.location.href = url;
       } else {

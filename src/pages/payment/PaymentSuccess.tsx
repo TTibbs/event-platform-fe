@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { stripeApi, eventsApi } from "@/api";
+import { stripeApi, eventsApi, ticketsApi } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Check, Calendar } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ export default function PaymentSuccess() {
   const [isLoading, setIsLoading] = useState(true);
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventName, setEventName] = useState<string | null>(null);
+  const { user } = useAuth();
 
   // Get session_id from URL params (returned by Stripe)
   const sessionId = searchParams.get("session_id");
@@ -28,18 +30,51 @@ export default function PaymentSuccess() {
           throw new Error("No session ID provided");
         }
 
+        // Set a flag to refresh ticket status on all event pages
+        sessionStorage.setItem("refreshTicketStatus", "true");
+
         // Sync payment status with our backend
-        // The backend will use the authenticated user from the session
         await stripeApi.syncPaymentStatus(sessionId);
 
         // Get event details to show in success page
-        if (pendingEventId) {
+        if (pendingEventId && user?.id) {
+          // Store the successful payment in localStorage for persistence
+          const ticketCacheKey = `ticket_paid_${user.id}_${pendingEventId}`;
+          localStorage.setItem(ticketCacheKey, "true");
+
+          // Verify the payment with our tickets API to ensure it's registered
+          try {
+            const isPaid = await ticketsApi.hasUserPaidForEvent(
+              user?.id?.toString() || "",
+              pendingEventId
+            );
+
+            if (!isPaid) {
+              console.warn(
+                "Payment succeeded but ticket not marked as paid yet"
+              );
+              // Make additional check after a delay to allow backend processing
+              setTimeout(async () => {
+                const verifiedPaid = await ticketsApi.hasUserPaidForEvent(
+                  user?.id?.toString() || "",
+                  pendingEventId
+                );
+                console.log(
+                  `Delayed payment verification: ${
+                    verifiedPaid ? "successful" : "failed"
+                  }`
+                );
+              }, 3000);
+            } else {
+              console.log("Payment and ticket status verified successfully");
+            }
+          } catch (error) {
+            console.error("Error verifying ticket payment status:", error);
+          }
+
           const eventResponse = await eventsApi.getEventById(pendingEventId);
           setEventName(eventResponse.data.event.title);
         }
-
-        // Clear the pending event ID from session storage
-        sessionStorage.removeItem("pendingEventTicket");
 
         toast.success("Payment successful! Your ticket has been issued.");
       } catch (error: any) {
@@ -51,7 +86,7 @@ export default function PaymentSuccess() {
     };
 
     syncPayment();
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, user?.id]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">

@@ -35,6 +35,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Event, EventDetail, UpdateEventParams } from "@/types/events";
+import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
 
 // Define a simplified user interface for auth context
 interface AuthUser {
@@ -62,6 +63,145 @@ export function EventCard({ event, userId }: EventProps) {
     useState<boolean>(false);
   const [checkingRegistration, setCheckingRegistration] =
     useState<boolean>(true);
+  const [hasPaidTicket, setHasPaidTicket] = useState<boolean>(false);
+
+  // Add last checked timestamp to force refresh after navigation
+  const [lastChecked, setLastChecked] = useState<number>(Date.now());
+
+  // Store paid ticket status in localStorage to prevent repurchase
+  const ticketCacheKey = `ticket_paid_${userId}_${event.id}`;
+
+  // Check local storage first for paid status (used to prevent flickering UI)
+  useEffect(() => {
+    if (userId) {
+      const cachedStatus = localStorage.getItem(ticketCacheKey);
+      if (cachedStatus === "true") {
+        console.log("Found cached paid status, marking as paid");
+        setHasPaidTicket(true);
+        setIsAlreadyRegistered(true);
+      }
+    }
+  }, [userId, event.id, ticketCacheKey]);
+
+  // Check if returning from payment flow
+  useEffect(() => {
+    const checkPaymentStatus = () => {
+      // Get stored event ID (the one that was just paid for)
+      const pendingEventId = sessionStorage.getItem("pendingEventTicket");
+      const refreshFlag = sessionStorage.getItem("refreshTicketStatus");
+
+      if (refreshFlag === "true") {
+        // Force refresh of ALL events (global payment completed)
+        console.log("Payment completed, refreshing all events");
+        setLastChecked(Date.now());
+        sessionStorage.removeItem("refreshTicketStatus");
+      }
+
+      // If this is the specific event that was paid for
+      if (pendingEventId === event.id.toString() && userId) {
+        console.log(
+          `This event (${event.id}) was just paid for by user ${userId}`
+        );
+
+        // Immediately mark as paid to prevent flicker
+        setIsAlreadyRegistered(true);
+        setHasPaidTicket(true);
+
+        // Cache the paid status in localStorage
+        localStorage.setItem(ticketCacheKey, "true");
+      }
+    };
+
+    checkPaymentStatus();
+  }, [event.id, userId, ticketCacheKey]);
+
+  // Force refresh when component is focused
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log("Window focused, checking for registration updates");
+      setLastChecked(Date.now());
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  // Check registration and payment status on mount and when lastChecked changes
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+      if (!userId) {
+        setCheckingRegistration(false);
+        return;
+      }
+
+      setCheckingRegistration(true);
+      console.log(
+        `Checking registration for event ${
+          event.id
+        }, user ${userId} at ${new Date().toISOString()}`
+      );
+
+      try {
+        // First check if registered
+        const isRegistered = await eventsApi.isUserRegistered(
+          event.id.toString(),
+          userId
+        );
+        setIsAlreadyRegistered(isRegistered);
+        console.log(`User registered status: ${isRegistered}`);
+
+        // If registered and it's a paid event, check ticket status
+        if (isRegistered && event.price > 0) {
+          try {
+            // Use multiple retries for ticket status check (in case of backend delay)
+            let attempts = 0;
+            let hasPaid = false;
+
+            while (attempts < 3 && !hasPaid) {
+              console.log(`Checking payment status, attempt ${attempts + 1}`);
+
+              hasPaid = await ticketsApi.hasUserPaidForEvent(userId, event.id);
+
+              if (hasPaid) {
+                console.log("Found paid ticket!");
+                break;
+              }
+
+              // Wait between retries
+              if (!hasPaid && attempts < 2) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+              }
+
+              attempts++;
+            }
+
+            // Update state based on final status
+            setHasPaidTicket(hasPaid);
+
+            // Cache the result in localStorage
+            if (hasPaid) {
+              localStorage.setItem(ticketCacheKey, "true");
+              setRegistrationSuccess(true);
+            }
+          } catch (ticketError) {
+            console.error("Failed to check ticket status:", ticketError);
+          }
+        } else if (
+          isRegistered &&
+          (event.price === 0 || event.price === null)
+        ) {
+          // For free events, being registered means success
+          setRegistrationSuccess(true);
+        }
+      } catch (error) {
+        console.error("Failed to check registration status:", error);
+      } finally {
+        setCheckingRegistration(false);
+      }
+    };
+
+    checkRegistrationStatus();
+  }, [event.id, userId, event.price, lastChecked, ticketCacheKey]);
 
   // Edit event state
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
@@ -163,56 +303,6 @@ export function EventCard({ event, userId }: EventProps) {
     user?.username,
     event.title,
   ]);
-
-  useEffect(() => {
-    // Check if the user is already registered for this event
-    const checkRegistrationStatus = async () => {
-      if (!userId) {
-        setCheckingRegistration(false);
-        return;
-      }
-
-      try {
-        // Check registration status
-        const isRegistered = await eventsApi.isUserRegistered(
-          event.id.toString(),
-          userId
-        );
-        setIsAlreadyRegistered(isRegistered);
-
-        // If registered, also check if they have a paid ticket
-        if (isRegistered && event.price > 0) {
-          try {
-            // Use the new ticketsApi function to check for paid tickets
-            const hasPaidTicket = await ticketsApi.hasUserPaidForEvent(
-              userId,
-              event.id
-            );
-
-            // Update registration message based on payment status
-            if (hasPaidTicket) {
-              // User has paid
-              setRegistrationSuccess(true);
-            }
-          } catch (ticketError) {
-            console.error("Failed to check ticket status:", ticketError);
-          }
-        } else if (
-          isRegistered &&
-          (event.price === 0 || event.price === null)
-        ) {
-          // For free events, being registered means success
-          setRegistrationSuccess(true);
-        }
-      } catch (error) {
-        console.error("Failed to check registration status:", error);
-      } finally {
-        setCheckingRegistration(false);
-      }
-    };
-
-    checkRegistrationStatus();
-  }, [event.id, userId, event.price]);
 
   const handleRegister = async () => {
     if (!isPublished || !userId || isAlreadyRegistered) return;
@@ -356,10 +446,26 @@ export function EventCard({ event, userId }: EventProps) {
           <p>Created by {event.creator_username}</p>
         </div>
 
-        {isAlreadyRegistered && (
+        {isAlreadyRegistered && hasPaidTicket && (
           <Alert>
             <AlertDescription>
-              You are already registered for this event!
+              You have purchased a ticket for this event!
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isAlreadyRegistered && !hasPaidTicket && event.price > 0 && (
+          <Alert>
+            <AlertDescription>
+              You are registered but need to complete payment.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isAlreadyRegistered && (event.price === 0 || event.price === null) && (
+          <Alert>
+            <AlertDescription>
+              You are registered for this event!
             </AlertDescription>
           </Alert>
         )}
@@ -380,22 +486,38 @@ export function EventCard({ event, userId }: EventProps) {
       </CardContent>
       <CardFooter className="flex flex-col gap-2">
         {checkingRegistration ? (
-          <Button disabled className="w-full">
+          <Button disabled className="w-full disabled:cursor-not-allowed">
             Checking registration status...
           </Button>
-        ) : isAlreadyRegistered ? (
+        ) : isAlreadyRegistered && hasPaidTicket ? (
           <Button
             disabled
-            className="w-full bg-accent hover:bg-accent text-accent-foreground"
+            className="w-full bg-green-600 hover:bg-green-600 text-white disabled:cursor-not-allowed"
           >
-            Already Registered
+            Ticket Purchased
           </Button>
+        ) : isAlreadyRegistered && !hasPaidTicket && event.price > 0 ? (
+          <StripeTicketCheckout
+            event={event}
+            buttonText="Complete Purchase"
+            disabled={!isPublished || !userId || hasPaidTicket}
+            className="w-full disabled:cursor-not-allowed"
+          />
+        ) : event.price && event.price > 0 ? (
+          // Stripe checkout for paid events
+          <StripeTicketCheckout
+            event={event}
+            buttonText="Purchase Ticket"
+            disabled={!isPublished || !userId || hasPaidTicket}
+            className="w-full disabled:cursor-not-allowed"
+          />
         ) : (
+          // Regular registration for free events
           <Button
             disabled={
               !isPublished || isRegistering || registrationSuccess || !userId
             }
-            className="w-full"
+            className="w-full disabled:cursor-not-allowed"
             onClick={handleRegister}
           >
             {isRegistering ? "Registering..." : "Register Now"}
