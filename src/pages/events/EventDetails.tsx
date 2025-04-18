@@ -5,6 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { EventDetail, UpdateEventParams } from "@/types/events";
+import { Button } from "@/components/ui/button";
+import { Calendar, Share2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -185,6 +188,38 @@ export default function EventDetails() {
     return new Date(dateString).toLocaleString();
   };
 
+  // Add to Google Calendar function
+  const addToGoogleCalendar = () => {
+    if (!event) return;
+
+    try {
+      // Format dates for Google Calendar URL
+      const startTime = new Date(event.start_time)
+        .toISOString()
+        .replace(/-|:|\.\d+/g, "");
+      const endTime = new Date(event.end_time)
+        .toISOString()
+        .replace(/-|:|\.\d+/g, "");
+
+      // Create Google Calendar URL with event details
+      const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        event.title
+      )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
+        event.description || ""
+      )}&location=${encodeURIComponent(
+        event.location || ""
+      )}&sf=true&output=xml`;
+
+      // Open in new window
+      window.open(url, "_blank");
+
+      toast.success("Opening Google Calendar...");
+    } catch (error) {
+      console.error("Failed to add event to Google Calendar:", error);
+      toast.error("Failed to add event to Google Calendar");
+    }
+  };
+
   if (isLoading)
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   if (error)
@@ -213,51 +248,51 @@ export default function EventDetails() {
           {(canEdit || user?.id === event.created_by) && (
             <button
               onClick={() => setIsEditMode(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded"
             >
               Edit Event
             </button>
           )}
         </div>
 
-        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
           <div className="mb-4">
             <h2 className="text-xl font-semibold mb-2">Details</h2>
             {event.description && <p className="mb-4">{event.description}</p>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-gray-600">Start Time:</p>
+                <p className="text-muted-foreground">Start Time:</p>
                 <p className="font-medium">{formatDate(event.start_time)}</p>
               </div>
               <div>
-                <p className="text-gray-600">End Time:</p>
+                <p className="text-muted-foreground">End Time:</p>
                 <p className="font-medium">{formatDate(event.end_time)}</p>
               </div>
               {event.location && (
                 <div>
-                  <p className="text-gray-600">Location:</p>
+                  <p className="text-muted-foreground">Location:</p>
                   <p className="font-medium">{event.location}</p>
                 </div>
               )}
               <div>
-                <p className="text-gray-600">Status:</p>
+                <p className="text-muted-foreground">Status:</p>
                 <p className="font-medium capitalize">{event.status}</p>
               </div>
               {event.price !== undefined && event.price !== null && (
                 <div>
-                  <p className="text-gray-600">Price:</p>
+                  <p className="text-muted-foreground">Price:</p>
                   <p className="font-medium">${event.price.toFixed(2)}</p>
                 </div>
               )}
               {event.max_attendees !== undefined && (
                 <div>
-                  <p className="text-gray-600">Capacity:</p>
+                  <p className="text-muted-foreground">Capacity:</p>
                   <p className="font-medium">{event.max_attendees} attendees</p>
                 </div>
               )}
               <div>
-                <p className="text-gray-600">Visibility:</p>
+                <p className="text-muted-foreground">Visibility:</p>
                 <p className="font-medium">
                   {event.is_public ? "Public" : "Private"}
                 </p>
@@ -266,9 +301,20 @@ export default function EventDetails() {
           </div>
         </div>
 
-        <Link to="/events" className="text-blue-500 hover:underline">
-          ← Back to Events
-        </Link>
+        <div className="flex space-x-4 mb-6">
+          <Link to="/events" className="text-primary hover:underline">
+            ← Back to Events
+          </Link>
+
+          <Button
+            variant="outline"
+            onClick={addToGoogleCalendar}
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Add to Google Calendar
+          </Button>
+        </div>
       </section>
     );
   }
@@ -280,10 +326,10 @@ export default function EventDetails() {
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-lg p-6"
+        className="bg-card text-card-foreground shadow-md rounded-lg p-6"
       >
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="title">
+          <label className="block text-foreground mb-2" htmlFor="title">
             Title
           </label>
           <input
@@ -292,13 +338,13 @@ export default function EventDetails() {
             type="text"
             value={editedEvent.title || ""}
             onChange={handleInputChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded bg-background text-foreground"
             required
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="description">
+          <label className="block text-foreground mb-2" htmlFor="description">
             Description
           </label>
           <textarea
@@ -306,14 +352,14 @@ export default function EventDetails() {
             name="description"
             value={editedEvent.description || ""}
             onChange={handleInputChange}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded bg-background text-foreground"
             rows={4}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-gray-700 mb-2" htmlFor="start_time">
+            <label className="block text-foreground mb-2" htmlFor="start_time">
               Start Time
             </label>
             <input
@@ -326,13 +372,13 @@ export default function EventDetails() {
                   : ""
               }
               onChange={handleInputChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-background text-foreground"
               required
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2" htmlFor="end_time">
+            <label className="block text-foreground mb-2" htmlFor="end_time">
               End Time
             </label>
             <input
@@ -345,7 +391,7 @@ export default function EventDetails() {
                   : ""
               }
               onChange={handleInputChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-background text-foreground"
               required
             />
           </div>
@@ -353,7 +399,7 @@ export default function EventDetails() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-gray-700 mb-2" htmlFor="location">
+            <label className="block text-foreground mb-2" htmlFor="location">
               Location
             </label>
             <input
@@ -362,12 +408,12 @@ export default function EventDetails() {
               type="text"
               value={editedEvent.location || ""}
               onChange={handleInputChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-background text-foreground"
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2" htmlFor="price">
+            <label className="block text-foreground mb-2" htmlFor="price">
               Price
             </label>
             <input
@@ -378,14 +424,17 @@ export default function EventDetails() {
               step="0.01"
               value={editedEvent.price || 0}
               onChange={handleInputChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-background text-foreground"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-gray-700 mb-2" htmlFor="max_attendees">
+            <label
+              className="block text-foreground mb-2"
+              htmlFor="max_attendees"
+            >
               Maximum Attendees
             </label>
             <input
@@ -395,12 +444,12 @@ export default function EventDetails() {
               min="0"
               value={editedEvent.max_attendees || 0}
               onChange={handleInputChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-background text-foreground"
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2" htmlFor="status">
+            <label className="block text-foreground mb-2" htmlFor="status">
               Status
             </label>
             <select
@@ -408,7 +457,7 @@ export default function EventDetails() {
               name="status"
               value={editedEvent.status || "draft"}
               onChange={handleInputChange}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-background text-foreground"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
@@ -431,7 +480,7 @@ export default function EventDetails() {
               }
               className="mr-2"
             />
-            <span className="text-gray-700">Public Event</span>
+            <span className="text-foreground">Public Event</span>
           </label>
         </div>
 
@@ -439,13 +488,13 @@ export default function EventDetails() {
           <button
             type="button"
             onClick={() => setIsEditMode(false)}
-            className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded"
+            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded"
           >
             Save Changes
           </button>
