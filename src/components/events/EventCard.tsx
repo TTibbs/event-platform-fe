@@ -29,12 +29,21 @@ interface AuthUser {
   is_site_admin?: boolean;
 }
 
+type EventCardVariant = "default" | "dashboard" | "compact";
+
 interface EventProps {
   event: Event;
   userId?: string | number;
+  className?: string;
+  variant?: EventCardVariant;
 }
 
-export function EventCard({ event, userId }: EventProps) {
+export function EventCard({
+  event,
+  userId,
+  className,
+  variant = "default",
+}: EventProps) {
   const { user } = useAuth() as { user: AuthUser | null };
   const navigate = useNavigate();
   const [isAlreadyRegistered, setIsAlreadyRegistered] =
@@ -279,8 +288,18 @@ export function EventCard({ event, userId }: EventProps) {
   // Define default placeholder image styles
   const placeholderStyles = "bg-muted flex items-center justify-center h-40";
 
+  // Apply variant-specific styles
+  const cardStyles = cn(
+    "w-full", // Base styles for all variants
+    variant === "default" && "max-w-md mx-auto",
+    variant === "dashboard" &&
+      "h-full shadow-md hover:shadow-lg transition-shadow duration-200 w-96",
+    variant === "compact" && "max-w-xs",
+    className // Allow custom overrides via className prop
+  );
+
   return (
-    <Card className="w-full">
+    <Card className={cardStyles}>
       <div className="relative overflow-hidden rounded-t-lg">
         {!imageError && event.event_img_url ? (
           <img

@@ -279,9 +279,14 @@ function DashboardOverview({
         </div>
 
         {draftEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {draftEvents.map((event) => (
-              <EventCard key={event.id} event={event} userId={userId} />
+              <EventCard
+                key={event.id}
+                event={event}
+                userId={userId}
+                variant="dashboard"
+              />
             ))}
           </div>
         ) : (
@@ -295,13 +300,18 @@ function DashboardOverview({
 
       <section>
         <h2 className="text-2xl font-bold mb-4">Recent Events</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {allEvents.slice(0, 3).map((event) => (
-            <EventCard key={event.id} event={event} userId={userId} />
+            <EventCard
+              key={event.id}
+              event={event}
+              userId={userId}
+              variant="dashboard"
+            />
           ))}
         </div>
         {allEvents.length > 3 && (
-          <div className="mt-4 text-center">
+          <div className="mt-6 text-center">
             <Button variant="outline" onClick={() => navigate("/events")}>
               View All Events
             </Button>
@@ -335,9 +345,14 @@ function DraftEventsList({
       </div>
 
       {events.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} userId={userId} />
+            <EventCard
+              key={event.id}
+              event={event}
+              userId={userId}
+              variant="dashboard"
+            />
           ))}
         </div>
       ) : (
@@ -363,9 +378,14 @@ function AllEventsList({
     <div>
       <h2 className="text-2xl font-bold mb-6">All Events</h2>
       {events.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} userId={userId} />
+            <EventCard
+              key={event.id}
+              event={event}
+              userId={userId}
+              variant="dashboard"
+            />
           ))}
         </div>
       ) : (
