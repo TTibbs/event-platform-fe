@@ -151,105 +151,111 @@ export default function Dashboard() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <Sidebar>
-          <SidebarHeader>
-            <div className="px-3 py-2">
-              <h2 className="text-xl font-bold text-primary">Team Dashboard</h2>
-              <p className="text-sm text-muted-foreground">Event Management</p>
+    <div className="pb-64 md:pb-44">
+      <SidebarProvider>
+        <div className="flex min-h-[calc(100vh-240px)]">
+          <Sidebar>
+            <SidebarHeader>
+              <div className="px-3 py-2">
+                <h2 className="text-xl font-bold text-primary">
+                  Team Dashboard
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Event Management
+                </p>
+              </div>
+            </SidebarHeader>
+
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "overview"}
+                        onClick={() => setActiveSection("overview")}
+                        className="cursor-pointer"
+                      >
+                        <Home className="mr-2" />
+                        <span>Overview</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "draft-events"}
+                        onClick={() => setActiveSection("draft-events")}
+                        className="cursor-pointer"
+                      >
+                        <FileText className="mr-2" />
+                        <span>Draft Events</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "all-events"}
+                        onClick={() => setActiveSection("all-events")}
+                        className="cursor-pointer"
+                      >
+                        <Calendar className="mr-2" />
+                        <span>All Events</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+
+              <SidebarGroup>
+                <SidebarGroupLabel>Actions</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection("create-event")}
+                        className="cursor-pointer"
+                      >
+                        <FilePlus className="mr-2" />
+                        <span>Create New Event</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection("manage-events")}
+                        className="cursor-pointer"
+                      >
+                        <Pencil className="mr-2" />
+                        <span>Manage & Edit Events</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+
+            <SidebarFooter>
+              <div className="px-3 py-2">
+                <Button
+                  variant="outline"
+                  className="w-full cursor-pointer"
+                  onClick={() => navigate("/profile")}
+                >
+                  My Profile
+                </Button>
+              </div>
+            </SidebarFooter>
+          </Sidebar>
+
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="pb-4 mb-6 border-b">
+              <h1 className="text-2xl font-bold">Team Dashboard</h1>
+              <p className="text-muted-foreground">Manage your team's events</p>
             </div>
-          </SidebarHeader>
 
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "overview"}
-                      onClick={() => setActiveSection("overview")}
-                      className="cursor-pointer"
-                    >
-                      <Home className="mr-2" />
-                      <span>Overview</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "draft-events"}
-                      onClick={() => setActiveSection("draft-events")}
-                      className="cursor-pointer"
-                    >
-                      <FileText className="mr-2" />
-                      <span>Draft Events</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "all-events"}
-                      onClick={() => setActiveSection("all-events")}
-                      className="cursor-pointer"
-                    >
-                      <Calendar className="mr-2" />
-                      <span>All Events</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Actions</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("create-event")}
-                      className="cursor-pointer"
-                    >
-                      <FilePlus className="mr-2" />
-                      <span>Create New Event</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("manage-events")}
-                      className="cursor-pointer"
-                    >
-                      <Pencil className="mr-2" />
-                      <span>Manage & Edit Events</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-
-          <SidebarFooter>
-            <div className="px-3 py-2">
-              <Button
-                variant="outline"
-                className="w-full cursor-pointer"
-                onClick={() => navigate("/profile")}
-              >
-                My Profile
-              </Button>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
-
-        <div className="flex-1 p-6 overflow-auto">
-          <div className="pb-4 mb-6 border-b">
-            <h1 className="text-2xl font-bold">Team Dashboard</h1>
-            <p className="text-muted-foreground">Manage your team's events</p>
+            {renderContent()}
           </div>
-
-          {renderContent()}
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 }
 

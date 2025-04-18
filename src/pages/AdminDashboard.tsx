@@ -218,103 +218,105 @@ export default function AdminDashboard() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <Sidebar>
-          <SidebarHeader>
-            <div className="px-3 py-2">
-              <h2 className="text-xl font-bold text-primary">
-                Admin Dashboard
-              </h2>
-              <p className="text-sm text-muted-foreground">Site Management</p>
+    <div className="pb-64 md:pb-44">
+      <SidebarProvider>
+        <div className="flex min-h-[calc(100vh-240px)]">
+          <Sidebar>
+            <SidebarHeader>
+              <div className="px-3 py-2">
+                <h2 className="text-xl font-bold text-primary">
+                  Admin Dashboard
+                </h2>
+                <p className="text-sm text-muted-foreground">Site Management</p>
+              </div>
+            </SidebarHeader>
+
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupLabel>Menu</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "overview"}
+                        onClick={() => setActiveSection("overview")}
+                        className="cursor-pointer"
+                      >
+                        <HomeIcon className="mr-2" />
+                        <span>Overview</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "users"}
+                        onClick={() => setActiveSection("users")}
+                        className="cursor-pointer"
+                      >
+                        <UsersIcon className="mr-2" />
+                        <span>Users</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "teams"}
+                        onClick={() => setActiveSection("teams")}
+                        className="cursor-pointer"
+                      >
+                        <UserCogIcon className="mr-2" />
+                        <span>Teams</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "events"}
+                        onClick={() => setActiveSection("events")}
+                        className="cursor-pointer"
+                      >
+                        <CalendarIcon className="mr-2" />
+                        <span>Events</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        isActive={activeSection === "settings"}
+                        onClick={() => setActiveSection("settings")}
+                        className="cursor-pointer"
+                      >
+                        <Settings2Icon className="mr-2" />
+                        <span>Settings</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+
+            <SidebarFooter>
+              <div className="px-3 py-2">
+                <Button
+                  variant="outline"
+                  className="w-full cursor-pointer"
+                  onClick={() => navigate("/")}
+                >
+                  Back to Site
+                </Button>
+              </div>
+            </SidebarFooter>
+          </Sidebar>
+
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="pb-4 mb-6 border-b">
+              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              <p className="text-muted-foreground">
+                Site administration and management
+              </p>
             </div>
-          </SidebarHeader>
 
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Menu</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "overview"}
-                      onClick={() => setActiveSection("overview")}
-                      className="cursor-pointer"
-                    >
-                      <HomeIcon className="mr-2" />
-                      <span>Overview</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "users"}
-                      onClick={() => setActiveSection("users")}
-                      className="cursor-pointer"
-                    >
-                      <UsersIcon className="mr-2" />
-                      <span>Users</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "teams"}
-                      onClick={() => setActiveSection("teams")}
-                      className="cursor-pointer"
-                    >
-                      <UserCogIcon className="mr-2" />
-                      <span>Teams</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "events"}
-                      onClick={() => setActiveSection("events")}
-                      className="cursor-pointer"
-                    >
-                      <CalendarIcon className="mr-2" />
-                      <span>Events</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      isActive={activeSection === "settings"}
-                      onClick={() => setActiveSection("settings")}
-                      className="cursor-pointer"
-                    >
-                      <Settings2Icon className="mr-2" />
-                      <span>Settings</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-
-          <SidebarFooter>
-            <div className="px-3 py-2">
-              <Button
-                variant="outline"
-                className="w-full cursor-pointer"
-                onClick={() => navigate("/")}
-              >
-                Back to Site
-              </Button>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
-
-        <div className="flex-1 p-6 overflow-auto">
-          <div className="pb-4 mb-6 border-b">
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Site administration and management
-            </p>
+            {renderContent()}
           </div>
-
-          {renderContent()}
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 }
 

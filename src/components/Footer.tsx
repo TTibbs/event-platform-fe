@@ -4,9 +4,9 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-background border-t border-border py-6">
+    <footer className="bg-background border-t border-border py-6 mt-auto relative z-20">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
           <div className="space-y-3">
             <h3 className="font-semibold text-foreground">EventsApp</h3>
             <p className="text-sm text-muted-foreground">
@@ -128,7 +128,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border">
+        <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-border">
           <p className="text-sm text-center text-muted-foreground">
             © {currentYear} EventsApp. All rights reserved.
           </p>
