@@ -76,16 +76,17 @@ export function EventCard({ event, userId }: EventProps) {
     if (userId) {
       const cachedStatus = localStorage.getItem(ticketCacheKey);
       if (cachedStatus === "true") {
-        console.log("Found cached paid status, marking as paid");
+        console.log("Found cached paid status, marking as paid and registered");
         setHasPaidTicket(true);
         setIsAlreadyRegistered(true);
+        setRegistrationSuccess(true);
       }
     }
   }, [userId, event.id, ticketCacheKey]);
 
   // Check if returning from payment flow
   useEffect(() => {
-    const checkPaymentStatus = () => {
+    const checkPaymentStatus = async () => {
       // Get stored event ID (the one that was just paid for)
       const pendingEventId = sessionStorage.getItem("pendingEventTicket");
       const refreshFlag = sessionStorage.getItem("refreshTicketStatus");
@@ -106,9 +107,27 @@ export function EventCard({ event, userId }: EventProps) {
         // Immediately mark as paid to prevent flicker
         setIsAlreadyRegistered(true);
         setHasPaidTicket(true);
+        setRegistrationSuccess(true);
 
         // Cache the paid status in localStorage
         localStorage.setItem(ticketCacheKey, "true");
+
+        // Ensure the user is registered in the backend
+        try {
+          const isRegistered = await eventsApi.isUserRegistered(
+            event.id.toString(),
+            userId
+          );
+
+          if (!isRegistered) {
+            console.log(
+              "Payment received but registration not found - creating registration"
+            );
+            await eventsApi.registerForEvent(event.id.toString(), userId);
+          }
+        } catch (error) {
+          console.error("Error syncing registration after payment:", error);
+        }
       }
     };
 
@@ -142,16 +161,8 @@ export function EventCard({ event, userId }: EventProps) {
       );
 
       try {
-        // First check if registered
-        const isRegistered = await eventsApi.isUserRegistered(
-          event.id.toString(),
-          userId
-        );
-        setIsAlreadyRegistered(isRegistered);
-        console.log(`User registered status: ${isRegistered}`);
-
-        // If registered and it's a paid event, check ticket status
-        if (isRegistered && event.price > 0) {
+        // Check if user has a paid ticket first for paid events
+        if (event.price > 0) {
           try {
             // Use multiple retries for ticket status check (in case of backend delay)
             let attempts = 0;
@@ -163,8 +174,39 @@ export function EventCard({ event, userId }: EventProps) {
               hasPaid = await ticketsApi.hasUserPaidForEvent(userId, event.id);
 
               if (hasPaid) {
-                console.log("Found paid ticket!");
-                break;
+                console.log("Found paid ticket! Marking as registered.");
+                setHasPaidTicket(true);
+                setIsAlreadyRegistered(true);
+                setRegistrationSuccess(true);
+
+                // Store in localStorage for future reference
+                localStorage.setItem(ticketCacheKey, "true");
+
+                // If we find a paid ticket but no registration, create one
+                // This is to ensure consistency between payment and registration systems
+                try {
+                  const isRegistered = await eventsApi.isUserRegistered(
+                    event.id.toString(),
+                    userId
+                  );
+
+                  if (!isRegistered) {
+                    console.log("Paid but not registered - registering user");
+                    await eventsApi.registerForEvent(
+                      event.id.toString(),
+                      userId
+                    );
+                  }
+                } catch (registerError) {
+                  console.error(
+                    "Error syncing registration status:",
+                    registerError
+                  );
+                }
+
+                // End the function early since we know the user is registered and paid
+                setCheckingRegistration(false);
+                return;
               }
 
               // Wait between retries
@@ -174,27 +216,33 @@ export function EventCard({ event, userId }: EventProps) {
 
               attempts++;
             }
-
-            // Update state based on final status
-            setHasPaidTicket(hasPaid);
-
-            // Cache the result in localStorage
-            if (hasPaid) {
-              localStorage.setItem(ticketCacheKey, "true");
-              setRegistrationSuccess(true);
-            }
           } catch (ticketError) {
             console.error("Failed to check ticket status:", ticketError);
           }
-        } else if (
-          isRegistered &&
-          (event.price === 0 || event.price === null)
-        ) {
+        }
+
+        // Check registration status (if we haven't already confirmed from ticket)
+        try {
+          const isRegistered = await eventsApi.isUserRegistered(
+            event.id.toString(),
+            userId
+          );
+
+          console.log(`User registered status: ${isRegistered}`);
+          setIsAlreadyRegistered(isRegistered);
+
           // For free events, being registered means success
-          setRegistrationSuccess(true);
+          if (isRegistered && (event.price === 0 || event.price === null)) {
+            setRegistrationSuccess(true);
+          }
+        } catch (registrationError) {
+          console.error(
+            "Failed to check registration status:",
+            registrationError
+          );
         }
       } catch (error) {
-        console.error("Failed to check registration status:", error);
+        console.error("Failed during registration/payment check:", error);
       } finally {
         setCheckingRegistration(false);
       }
@@ -447,32 +495,38 @@ export function EventCard({ event, userId }: EventProps) {
         </div>
 
         {isAlreadyRegistered && hasPaidTicket && (
-          <Alert>
-            <AlertDescription>
-              You have purchased a ticket for this event!
+          <Alert className="bg-green-50 border-green-200">
+            <AlertDescription className="flex items-center">
+              <span className="bg-green-500 w-2 h-2 rounded-full mr-2"></span>
+              You're all set! You have registered and purchased a ticket for
+              this event.
             </AlertDescription>
           </Alert>
         )}
 
         {isAlreadyRegistered && !hasPaidTicket && event.price > 0 && (
-          <Alert>
-            <AlertDescription>
-              You are registered but need to complete payment.
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertDescription className="flex items-center">
+              <span className="bg-amber-500 w-2 h-2 rounded-full mr-2"></span>
+              You are registered but need to complete payment to secure your
+              spot.
             </AlertDescription>
           </Alert>
         )}
 
         {isAlreadyRegistered && (event.price === 0 || event.price === null) && (
-          <Alert>
-            <AlertDescription>
-              You are registered for this event!
+          <Alert className="bg-green-50 border-green-200">
+            <AlertDescription className="flex items-center">
+              <span className="bg-green-500 w-2 h-2 rounded-full mr-2"></span>
+              You are registered for this free event!
             </AlertDescription>
           </Alert>
         )}
 
         {registrationSuccess && !isAlreadyRegistered && (
-          <Alert>
-            <AlertDescription>
+          <Alert className="bg-green-50 border-green-200">
+            <AlertDescription className="flex items-center">
+              <span className="bg-green-500 w-2 h-2 rounded-full mr-2"></span>
               Successfully registered for this event!
             </AlertDescription>
           </Alert>
@@ -494,12 +548,12 @@ export function EventCard({ event, userId }: EventProps) {
             disabled
             className="w-full bg-green-600 hover:bg-green-600 text-white disabled:cursor-not-allowed"
           >
-            Ticket Purchased
+            Registration Complete
           </Button>
         ) : isAlreadyRegistered && !hasPaidTicket && event.price > 0 ? (
           <StripeTicketCheckout
             event={event}
-            buttonText="Complete Purchase"
+            buttonText="Complete Payment"
             disabled={!isPublished || !userId || hasPaidTicket}
             className="w-full disabled:cursor-not-allowed"
           />
@@ -507,7 +561,7 @@ export function EventCard({ event, userId }: EventProps) {
           // Stripe checkout for paid events
           <StripeTicketCheckout
             event={event}
-            buttonText="Purchase Ticket"
+            buttonText="Register & Purchase Ticket"
             disabled={!isPublished || !userId || hasPaidTicket}
             className="w-full disabled:cursor-not-allowed"
           />
