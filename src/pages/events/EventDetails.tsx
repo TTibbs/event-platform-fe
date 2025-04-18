@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { EventDetail, UpdateEventParams } from "@/types/events";
 import { Button } from "@/components/ui/button";
-import { Calendar, Share2 } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 export default function EventDetails() {

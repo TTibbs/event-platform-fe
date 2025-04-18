@@ -36,7 +36,7 @@ const usersApi = {
 
   // New endpoint for admin dashboard that consolidates all data in one call
   getAdminDashboardData: () => {
-    return axiosClient.get("/users/admin/dashboard");
+    return axiosClient.get("/admin/dashboard");
   },
 };
 
