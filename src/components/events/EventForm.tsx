@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import eventsApi from "@/api/events";
+import { Event } from "@/types/events";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -36,29 +37,46 @@ const formSchema = z.object({
   status: z.enum(["published", "draft"]),
   event_type: z.string().min(1, "Event type is required"),
   is_public: z.boolean().default(true),
+  event_img_url: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-export default function EventForm() {
+interface EventFormProps {
+  event?: Event;
+  isEditing?: boolean;
+}
+
+export default function EventForm({
+  event,
+  isEditing = false,
+}: EventFormProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Define the form
+  // Format datetime string for input fields
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toISOString().slice(0, 16); // Format: "YYYY-MM-DDThh:mm"
+  };
+
+  // Define the form with defaults based on whether we're editing
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
-      title: "",
-      description: "",
-      location: "",
-      start_time: "",
-      end_time: "",
-      price: 0,
-      max_attendees: 10,
-      status: "draft" as const,
-      event_type: "",
-      is_public: true,
+      title: event?.title || "",
+      description: event?.description || "",
+      location: event?.location || "",
+      start_time: event?.start_time ? formatDateForInput(event.start_time) : "",
+      end_time: event?.end_time ? formatDateForInput(event.end_time) : "",
+      price: event?.price ?? 0,
+      max_attendees: event?.max_attendees ?? 10,
+      status: (event?.status as "draft" | "published") || "draft",
+      event_type: event?.event_type || "",
+      is_public: event?.is_public ?? true,
+      event_img_url: event?.event_img_url || "",
     },
   });
 
@@ -67,21 +85,34 @@ export default function EventForm() {
       setIsSubmitting(true);
       setError(null);
 
-      // Format dates as ISO strings if they aren't already
+      // Format dates as ISO strings
       const formattedData = {
         ...data,
         start_time: new Date(data.start_time).toISOString(),
         end_time: new Date(data.end_time).toISOString(),
       };
 
-      // Call API to create event
-      await eventsApi.createEvent(formattedData);
+      if (isEditing && event?.id) {
+        // Update existing event
+        await eventsApi.updateEvent(event.id.toString(), formattedData);
+      } else {
+        // Create new event
+        await eventsApi.createEvent(formattedData);
+      }
 
       // Redirect to events page
       navigate("/events");
     } catch (error: any) {
-      console.error("Failed to create event:", error);
-      setError(error.message || "Failed to create event. Please try again.");
+      console.error(
+        `Failed to ${isEditing ? "update" : "create"} event:`,
+        error
+      );
+      setError(
+        error.message ||
+          `Failed to ${
+            isEditing ? "update" : "create"
+          } event. Please try again.`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -89,7 +120,9 @@ export default function EventForm() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Create New Event</h1>
+      <h1 className="text-2xl font-bold mb-6">
+        {isEditing ? "Edit Event" : "Create New Event"}
+      </h1>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
@@ -243,6 +276,25 @@ export default function EventForm() {
             )}
           />
 
+          <div className="space-y-2">
+            <FormField
+              control={form.control}
+              name="event_img_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Event Image URL (optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter URL for event image" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Provide a URL to an image that represents your event
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control as any}
             name="is_public"
@@ -301,7 +353,11 @@ export default function EventForm() {
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Create Event"}
+              {isSubmitting
+                ? "Saving..."
+                : isEditing
+                ? "Update Event"
+                : "Create Event"}
             </Button>
           </div>
         </form>

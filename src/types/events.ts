@@ -18,10 +18,12 @@ export interface Event {
   updated_at: string;
   created_by: number;
   team_id: number;
+  event_img_url?: string;
 }
 
 export interface EventDetail extends Omit<Event, "price"> {
   price: number | null;
+  event_img_url?: string;
 }
 
 export interface EventsListProps {
@@ -40,6 +42,7 @@ export interface CreateEventParams {
   event_type?: string;
   is_public?: boolean;
   team_id?: number;
+  event_img_url?: string;
   [key: string]: any;
 }
 
@@ -55,6 +58,7 @@ export interface UpdateEventParams {
   event_type?: string;
   is_public?: boolean;
   team_id?: number | string;
+  event_img_url?: string;
 }
 
 export interface Registration {
@@ -76,6 +80,7 @@ export interface EventRegistration extends Registration {
   event_location?: string;
   event_status?: string;
   team_name?: string;
+  event_img_url?: string;
 }
 
 export interface CardItem {

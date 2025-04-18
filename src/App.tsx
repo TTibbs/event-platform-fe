@@ -9,6 +9,7 @@ import Events from "@/pages/events/Events";
 import Profile from "@/pages/Profile";
 import { Toaster } from "@/components/ui/sonner";
 import CreateEvent from "@/pages/events/CreateEvent";
+import EditEvent from "@/pages/events/EditEvent";
 import Dashboard from "@/pages/Dashboard";
 import EventDetails from "@/pages/events/EventDetails";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -28,6 +29,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/create" element={<CreateEvent />} />
+                <Route path="/events/edit/:eventId" element={<EditEvent />} />
                 <Route path="/events/:id" element={<EventDetails />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin/*" element={<AdminDashboard />} />

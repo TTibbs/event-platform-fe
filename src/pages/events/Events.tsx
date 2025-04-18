@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Event } from "@/types/events";
+import { Plus } from "lucide-react";
 
 export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -96,21 +97,34 @@ export default function Events() {
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold">Upcoming Events</h1>
-        <p className="text-muted-foreground">
-          Browse and register for upcoming events
-        </p>
+        <h1 className="text-3xl font-bold">Manage Events</h1>
+        <p className="text-muted-foreground">Browse, edit, and create events</p>
       </header>
 
       {canCreateEvent && (
-        <div className="flex justify-end mb-4">
-          <Button onClick={() => navigate("/events/create")}>
+        <div className="flex justify-end mb-6">
+          <Button
+            onClick={() => navigate("/events/create")}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
             Create Event
           </Button>
         </div>
       )}
 
-      <EventsList events={events} userId={currentUserId} />
+      {events.length === 0 ? (
+        <div className="bg-muted border border-border rounded-md p-8 text-center">
+          <p className="text-muted-foreground mb-4">No events found.</p>
+          {canCreateEvent && (
+            <Button onClick={() => navigate("/events/create")}>
+              Create Your First Event
+            </Button>
+          )}
+        </div>
+      ) : (
+        <EventsList events={events} userId={currentUserId} />
+      )}
     </div>
   );
 }

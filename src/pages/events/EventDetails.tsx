@@ -4,22 +4,21 @@ import usersApi from "@/api/users";
 import ticketsApi from "@/api/tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { EventDetail, UpdateEventParams } from "@/types/events";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { EventDetail } from "@/types/events";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
+import { Calendar, PencilIcon } from "lucide-react";
 import { toast } from "sonner";
 import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
 
 export default function EventDetails() {
   const { id } = useParams();
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState<boolean>(false);
-  const [isEditMode, setIsEditMode] = useState<boolean>(false);
-  const [editedEvent, setEditedEvent] = useState<Partial<EventDetail>>({});
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [hasPaidTicket, setHasPaidTicket] = useState<boolean>(false);
   const [lastChecked, setLastChecked] = useState<number>(Date.now());
@@ -109,9 +108,6 @@ export default function EventDetails() {
         // Extract the event from the nested structure
         const eventData = response.data.event;
         setEvent(eventData);
-
-        // Initialize edited event with current values
-        setEditedEvent(eventData);
 
         // Check if user can edit this event
         if (isAuthenticated && user && eventData.team_id) {
@@ -273,54 +269,6 @@ export default function EventDetails() {
     }
   };
 
-  // Handle form input changes
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setEditedEvent((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!id) return;
-
-    try {
-      // Create an object that matches UpdateEventParams type
-      const updateParams: UpdateEventParams = {
-        title: editedEvent.title,
-        description: editedEvent.description,
-        location: editedEvent.location,
-        start_time: editedEvent.start_time,
-        end_time: editedEvent.end_time,
-        // Handle null price by setting it to undefined for the API
-        price: editedEvent.price !== null ? editedEvent.price : undefined,
-        max_attendees: editedEvent.max_attendees,
-        status: editedEvent.status as
-          | "draft"
-          | "published"
-          | "cancelled"
-          | undefined,
-        is_public: editedEvent.is_public,
-      };
-
-      await eventsApi.updateEvent(id, updateParams);
-      // Refresh event data
-      const response = await eventsApi.getEventById(id);
-      setEvent(response.data.event);
-      setIsEditMode(false);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to update event");
-    }
-  };
-
   // Format date for display
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -358,6 +306,13 @@ export default function EventDetails() {
     }
   };
 
+  // Navigate to edit page
+  const handleEditEvent = () => {
+    if (id) {
+      navigate(`/events/edit/${id}`);
+    }
+  };
+
   if (isLoading)
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   if (error)
@@ -367,325 +322,139 @@ export default function EventDetails() {
   if (!event)
     return <div className="container mx-auto px-4 py-8">Event not found</div>;
 
-  // View mode - display event details
-  if (!isEditMode) {
-    // Debug logging for edit permission check
-    console.log("Render conditions for edit button:", {
-      canEdit,
-      "user?.id": user?.id,
-      "event.created_by": event.created_by,
-      "user is creator?": user?.id === event.created_by,
-      "edit button should show?": canEdit || user?.id === event.created_by,
-    });
+  // Debug logging for edit permission check
+  console.log("Render conditions for edit button:", {
+    canEdit,
+    "user?.id": user?.id,
+    "event.created_by": event.created_by,
+    "user is creator?": user?.id === event.created_by,
+    "edit button should show?": canEdit || user?.id === event.created_by,
+  });
 
-    return (
-      <section className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">{event.title}</h1>
-          {/* Show edit button if either our permission check says so OR user is the creator */}
-          {(canEdit || user?.id === event.created_by) && (
-            <button
-              onClick={() => setIsEditMode(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded"
-            >
-              Edit Event
-            </button>
-          )}
-        </div>
-
-        <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Details</h2>
-            {event.description && <p className="mb-4">{event.description}</p>}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-muted-foreground">Start Time:</p>
-                <p className="font-medium">{formatDate(event.start_time)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">End Time:</p>
-                <p className="font-medium">{formatDate(event.end_time)}</p>
-              </div>
-              {event.location && (
-                <div>
-                  <p className="text-muted-foreground">Location:</p>
-                  <p className="font-medium">{event.location}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-muted-foreground">Status:</p>
-                <p className="font-medium capitalize">{event.status}</p>
-              </div>
-              {event.price !== undefined && event.price !== null && (
-                <div>
-                  <p className="text-muted-foreground">Price:</p>
-                  <p className="font-medium">${event.price.toFixed(2)}</p>
-                </div>
-              )}
-              {event.max_attendees !== undefined && (
-                <div>
-                  <p className="text-muted-foreground">Capacity:</p>
-                  <p className="font-medium">{event.max_attendees} attendees</p>
-                </div>
-              )}
-              <div>
-                <p className="text-muted-foreground">Visibility:</p>
-                <p className="font-medium">
-                  {event.is_public ? "Public" : "Private"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Purchase ticket section */}
-        {event.price !== undefined &&
-          event.price !== null &&
-          event.price > 0 &&
-          isAuthenticated && (
-            <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold mb-2">Ticket Purchase</h2>
-                <p className="mb-4">
-                  {isRegistered
-                    ? hasPaidTicket
-                      ? "You have already purchased a ticket for this event."
-                      : "You are registered for this event. Complete your purchase to receive your ticket."
-                    : "Purchase your ticket to attend this event."}
-                </p>
-
-                <div className="flex items-center gap-4">
-                  <p className="font-medium text-lg">
-                    ${(event.price ?? 0).toFixed(2)}
-                  </p>
-                  <StripeTicketCheckout
-                    event={event}
-                    buttonText={
-                      hasPaidTicket
-                        ? "Ticket Purchased"
-                        : isRegistered
-                        ? "Complete Purchase"
-                        : "Buy Ticket"
-                    }
-                    disabled={event.status !== "published" || hasPaidTicket}
-                    className={`${
-                      hasPaidTicket
-                        ? "bg-green-600 hover:bg-green-600 text-white"
-                        : ""
-                    } disabled:cursor-not-allowed`}
-                  />
-                </div>
-
-                {event.status !== "published" && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Ticket sales are not available while the event is in{" "}
-                    {event.status} status.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-        <div className="flex space-x-4 mb-6">
-          <Link to="/events" className="text-primary hover:underline">
-            ← Back to Events
-          </Link>
-
-          <Button
-            variant="outline"
-            onClick={addToGoogleCalendar}
-            className="flex items-center gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Add to Google Calendar
-          </Button>
-        </div>
-      </section>
-    );
-  }
-
-  // Edit mode - show form
   return (
     <section className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Edit Event</h1>
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-card text-card-foreground shadow-md rounded-lg p-6"
-      >
-        <div className="mb-4">
-          <label className="block text-foreground mb-2" htmlFor="title">
-            Title
-          </label>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            value={editedEvent.title || ""}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded bg-background text-foreground"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-foreground mb-2" htmlFor="description">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={editedEvent.description || ""}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded bg-background text-foreground"
-            rows={4}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-foreground mb-2" htmlFor="start_time">
-              Start Time
-            </label>
-            <input
-              id="start_time"
-              name="start_time"
-              type="datetime-local"
-              value={
-                editedEvent.start_time
-                  ? new Date(editedEvent.start_time).toISOString().slice(0, 16)
-                  : ""
-              }
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded bg-background text-foreground"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-foreground mb-2" htmlFor="end_time">
-              End Time
-            </label>
-            <input
-              id="end_time"
-              name="end_time"
-              type="datetime-local"
-              value={
-                editedEvent.end_time
-                  ? new Date(editedEvent.end_time).toISOString().slice(0, 16)
-                  : ""
-              }
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded bg-background text-foreground"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-foreground mb-2" htmlFor="location">
-              Location
-            </label>
-            <input
-              id="location"
-              name="location"
-              type="text"
-              value={editedEvent.location || ""}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded bg-background text-foreground"
-            />
-          </div>
-
-          <div>
-            <label className="block text-foreground mb-2" htmlFor="price">
-              Price
-            </label>
-            <input
-              id="price"
-              name="price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={editedEvent.price || 0}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded bg-background text-foreground"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label
-              className="block text-foreground mb-2"
-              htmlFor="max_attendees"
-            >
-              Maximum Attendees
-            </label>
-            <input
-              id="max_attendees"
-              name="max_attendees"
-              type="number"
-              min="0"
-              value={editedEvent.max_attendees || 0}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded bg-background text-foreground"
-            />
-          </div>
-
-          <div>
-            <label className="block text-foreground mb-2" htmlFor="status">
-              Status
-            </label>
-            <select
-              id="status"
-              name="status"
-              value={editedEvent.status || "draft"}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded bg-background text-foreground"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="is_public"
-              checked={editedEvent.is_public || false}
-              onChange={(e) =>
-                setEditedEvent((prev) => ({
-                  ...prev,
-                  is_public: e.target.checked,
-                }))
-              }
-              className="mr-2"
-            />
-            <span className="text-foreground">Public Event</span>
-          </label>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setIsEditMode(false)}
-            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2 rounded"
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">{event.title}</h1>
+        {/* Show edit button if either our permission check says so OR user is the creator */}
+        {(canEdit || user?.id === event.created_by) && (
+          <Button
+            onClick={handleEditEvent}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded flex items-center gap-2"
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded"
-          >
-            Save Changes
-          </button>
+            <PencilIcon className="h-4 w-4" />
+            Edit Event
+          </Button>
+        )}
+      </div>
+
+      <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold mb-2">Details</h2>
+          {event.description && <p className="mb-4">{event.description}</p>}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-muted-foreground">Start Time:</p>
+              <p className="font-medium">{formatDate(event.start_time)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">End Time:</p>
+              <p className="font-medium">{formatDate(event.end_time)}</p>
+            </div>
+            {event.location && (
+              <div>
+                <p className="text-muted-foreground">Location:</p>
+                <p className="font-medium">{event.location}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-muted-foreground">Status:</p>
+              <p className="font-medium capitalize">{event.status}</p>
+            </div>
+            {event.price !== undefined && event.price !== null && (
+              <div>
+                <p className="text-muted-foreground">Price:</p>
+                <p className="font-medium">${event.price.toFixed(2)}</p>
+              </div>
+            )}
+            {event.max_attendees !== undefined && (
+              <div>
+                <p className="text-muted-foreground">Capacity:</p>
+                <p className="font-medium">{event.max_attendees} attendees</p>
+              </div>
+            )}
+            <div>
+              <p className="text-muted-foreground">Visibility:</p>
+              <p className="font-medium">
+                {event.is_public ? "Public" : "Private"}
+              </p>
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
+
+      {/* Purchase ticket section */}
+      {event.price !== undefined &&
+        event.price !== null &&
+        event.price > 0 &&
+        isAuthenticated && (
+          <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold mb-2">Ticket Purchase</h2>
+              <p className="mb-4">
+                {isRegistered
+                  ? hasPaidTicket
+                    ? "You have already purchased a ticket for this event."
+                    : "You are registered for this event. Complete your purchase to receive your ticket."
+                  : "Purchase your ticket to attend this event."}
+              </p>
+
+              <div className="flex items-center gap-4">
+                <p className="font-medium text-lg">
+                  ${(event.price ?? 0).toFixed(2)}
+                </p>
+                <StripeTicketCheckout
+                  event={event}
+                  buttonText={
+                    hasPaidTicket
+                      ? "Ticket Purchased"
+                      : isRegistered
+                      ? "Complete Purchase"
+                      : "Buy Ticket"
+                  }
+                  disabled={event.status !== "published" || hasPaidTicket}
+                  className={`${
+                    hasPaidTicket
+                      ? "bg-green-600 hover:bg-green-600 text-white"
+                      : ""
+                  } disabled:cursor-not-allowed`}
+                />
+              </div>
+
+              {event.status !== "published" && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Ticket sales are not available while the event is in{" "}
+                  {event.status} status.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+      <div className="flex space-x-4 mb-6">
+        <Link to="/events" className="text-primary hover:underline">
+          ← Back to Events
+        </Link>
+
+        <Button
+          variant="outline"
+          onClick={addToGoogleCalendar}
+          className="flex items-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Add to Google Calendar
+        </Button>
+      </div>
     </section>
   );
 }

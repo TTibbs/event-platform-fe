@@ -6,6 +6,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Event } from "@/types/events";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarProvider,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+} from "@/components/ui/sidebar";
+import { Pencil, FilePlus, Calendar, FileText, Home } from "lucide-react";
 
 export default function Dashboard() {
   const [draftEvents, setDraftEvents] = useState<Event[]>([]);
@@ -13,6 +27,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
+  const [activeSection, setActiveSection] = useState<string>("overview");
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -104,44 +119,260 @@ export default function Dashboard() {
     );
   }
 
+  const renderContent = () => {
+    switch (activeSection) {
+      case "overview":
+        return (
+          <DashboardOverview
+            draftEvents={draftEvents}
+            allEvents={allEvents}
+            userId={user?.id}
+          />
+        );
+      case "draft-events":
+        return <DraftEventsList events={draftEvents} userId={user?.id} />;
+      case "all-events":
+        return <AllEventsList events={allEvents} userId={user?.id} />;
+      case "create-event":
+        navigate("/events/create");
+        return null;
+      case "manage-events":
+        navigate("/events");
+        return null;
+      default:
+        return (
+          <DashboardOverview
+            draftEvents={draftEvents}
+            allEvents={allEvents}
+            userId={user?.id}
+          />
+        );
+    }
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      {isTeamMember && (
-        <section className="mb-12">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Draft Events</h2>
-            <Button
-              className="bg-primary hover:bg-primary/90"
-              onClick={() => navigate("/events/create")}
-            >
-              Create New Event
-            </Button>
+    <SidebarProvider>
+      <div className="flex min-h-screen">
+        <Sidebar>
+          <SidebarHeader>
+            <div className="px-3 py-2">
+              <h2 className="text-xl font-bold text-primary">Team Dashboard</h2>
+              <p className="text-sm text-muted-foreground">Event Management</p>
+            </div>
+          </SidebarHeader>
+
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={activeSection === "overview"}
+                      onClick={() => setActiveSection("overview")}
+                      className="cursor-pointer"
+                    >
+                      <Home className="mr-2" />
+                      <span>Overview</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={activeSection === "draft-events"}
+                      onClick={() => setActiveSection("draft-events")}
+                      className="cursor-pointer"
+                    >
+                      <FileText className="mr-2" />
+                      <span>Draft Events</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={activeSection === "all-events"}
+                      onClick={() => setActiveSection("all-events")}
+                      className="cursor-pointer"
+                    >
+                      <Calendar className="mr-2" />
+                      <span>All Events</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Actions</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection("create-event")}
+                      className="cursor-pointer"
+                    >
+                      <FilePlus className="mr-2" />
+                      <span>Create New Event</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection("manage-events")}
+                      className="cursor-pointer"
+                    >
+                      <Pencil className="mr-2" />
+                      <span>Manage & Edit Events</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+
+          <SidebarFooter>
+            <div className="px-3 py-2">
+              <Button
+                variant="outline"
+                className="w-full cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                My Profile
+              </Button>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+
+        <div className="flex-1 p-6 overflow-auto">
+          <div className="pb-4 mb-6 border-b">
+            <h1 className="text-2xl font-bold">Team Dashboard</h1>
+            <p className="text-muted-foreground">Manage your team's events</p>
           </div>
 
-          {draftEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {draftEvents.map((event) => (
-                <EventCard key={event.id} event={event} userId={user?.id} />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-muted border border-border rounded-md p-8 text-center">
-              <p className="text-muted-foreground mb-4">
-                You don't have any draft events.
-              </p>
-            </div>
-          )}
-        </section>
-      )}
+          {renderContent()}
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
 
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-4">All Events</h2>
+// Component to show both draft and all events (overview)
+function DashboardOverview({
+  draftEvents,
+  allEvents,
+  userId,
+}: {
+  draftEvents: Event[];
+  allEvents: Event[];
+  userId?: number;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="space-y-10">
+      <section>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Draft Events</h2>
+          <Button
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => navigate("/events/create")}
+          >
+            Create New Event
+          </Button>
+        </div>
+
+        {draftEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {draftEvents.map((event) => (
+              <EventCard key={event.id} event={event} userId={userId} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-muted border border-border rounded-md p-8 text-center">
+            <p className="text-muted-foreground mb-4">
+              You don't have any draft events.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Recent Events</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {allEvents.map((event) => (
-            <EventCard key={event.id} event={event} userId={user?.id} />
+          {allEvents.slice(0, 3).map((event) => (
+            <EventCard key={event.id} event={event} userId={userId} />
           ))}
         </div>
+        {allEvents.length > 3 && (
+          <div className="mt-4 text-center">
+            <Button variant="outline" onClick={() => navigate("/events")}>
+              View All Events
+            </Button>
+          </div>
+        )}
       </section>
+    </div>
+  );
+}
+
+// Component to show only draft events
+function DraftEventsList({
+  events,
+  userId,
+}: {
+  events: Event[];
+  userId?: number;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Draft Events</h2>
+        <Button
+          className="bg-primary hover:bg-primary/90"
+          onClick={() => navigate("/events/create")}
+        >
+          Create New Event
+        </Button>
+      </div>
+
+      {events.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} userId={userId} />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-muted border border-border rounded-md p-8 text-center">
+          <p className="text-muted-foreground mb-4">
+            You don't have any draft events.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component to show all events
+function AllEventsList({
+  events,
+  userId,
+}: {
+  events: Event[];
+  userId?: number;
+}) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">All Events</h2>
+      {events.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} userId={userId} />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-muted border border-border rounded-md p-8 text-center">
+          <p className="text-muted-foreground mb-4">No events found.</p>
+        </div>
+      )}
     </div>
   );
 }
