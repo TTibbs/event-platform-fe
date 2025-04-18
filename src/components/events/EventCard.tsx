@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import eventsApi from "@/api/events";
 import teamsApi from "@/api/teams";
 import usersApi from "@/api/users";
+import ticketsApi from "@/api/tickets";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -172,11 +173,37 @@ export function EventCard({ event, userId }: EventProps) {
       }
 
       try {
+        // Check registration status
         const isRegistered = await eventsApi.isUserRegistered(
           event.id.toString(),
           userId
         );
         setIsAlreadyRegistered(isRegistered);
+
+        // If registered, also check if they have a paid ticket
+        if (isRegistered && event.price > 0) {
+          try {
+            // Use the new ticketsApi function to check for paid tickets
+            const hasPaidTicket = await ticketsApi.hasUserPaidForEvent(
+              userId,
+              event.id
+            );
+
+            // Update registration message based on payment status
+            if (hasPaidTicket) {
+              // User has paid
+              setRegistrationSuccess(true);
+            }
+          } catch (ticketError) {
+            console.error("Failed to check ticket status:", ticketError);
+          }
+        } else if (
+          isRegistered &&
+          (event.price === 0 || event.price === null)
+        ) {
+          // For free events, being registered means success
+          setRegistrationSuccess(true);
+        }
       } catch (error) {
         console.error("Failed to check registration status:", error);
       } finally {
@@ -185,7 +212,7 @@ export function EventCard({ event, userId }: EventProps) {
     };
 
     checkRegistrationStatus();
-  }, [event.id, userId]);
+  }, [event.id, userId, event.price]);
 
   const handleRegister = async () => {
     if (!isPublished || !userId || isAlreadyRegistered) return;

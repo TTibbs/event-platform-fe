@@ -29,6 +29,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EventRegistration } from "@/types/events";
+import ticketsApi from "@/api/tickets";
 
 function EventsCalendar({ userId }: { userId: string }) {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -87,9 +88,28 @@ function EventsCalendar({ userId }: { userId: string }) {
   }, [date, registrations]);
 
   // Handle canceling registration
-  const handleCancelRegistration = async (registrationId: number) => {
+  const handleCancelRegistration = async (
+    registrationId: number,
+    eventId: number
+  ) => {
     try {
+      // First check if this registration has a paid ticket
+      const hasPaidTicket = await ticketsApi.hasUserPaidForEvent(
+        userId,
+        eventId
+      );
+
+      if (hasPaidTicket) {
+        // If it has a paid ticket, show a different message
+        toast.error(
+          "You have already purchased a ticket for this event. Please contact support for refunds."
+        );
+        return;
+      }
+
+      // Proceed with cancellation for free registrations
       await eventsApi.cancelRegistration(registrationId.toString());
+
       // Remove the canceled registration from state
       setRegistrations((regs) =>
         regs.filter((reg) => reg.id !== registrationId)
@@ -229,7 +249,9 @@ function EventsCalendar({ userId }: { userId: string }) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => handleCancelRegistration(registration.id)}
+            onClick={() =>
+              handleCancelRegistration(registration.id, registration.event_id)
+            }
             className="text-red-600"
           >
             Cancel registration

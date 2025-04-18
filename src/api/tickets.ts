@@ -37,6 +37,35 @@ const ticketsApi = {
   deleteTicket: (id: string) => {
     return axiosClient.delete(`/tickets/${id}`);
   },
+
+  /**
+   * Check if a user has a paid ticket for an event
+   * @param userId The user ID to check
+   * @param eventId The event ID to check
+   * @returns Promise resolving to true if the user has a paid ticket, false otherwise
+   */
+  hasUserPaidForEvent: async (
+    userId: string | number,
+    eventId: string | number
+  ): Promise<boolean> => {
+    try {
+      const response = await axiosClient.get(
+        `/tickets/user/${userId}/event/${eventId}`
+      );
+
+      // Check for the new API response format {hasUserPaid: boolean}
+      if (response.data.hasUserPaid !== undefined) {
+        return response.data.hasUserPaid;
+      }
+
+      // Fallback to the original implementation if the new format isn't present
+      const tickets = response.data.tickets || [];
+      return tickets.some((ticket: any) => ticket.paid === true);
+    } catch (error) {
+      console.error("Error checking ticket status:", error);
+      return false;
+    }
+  },
 };
 
 export default ticketsApi;

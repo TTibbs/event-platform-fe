@@ -8,6 +8,7 @@ import { EventDetail, UpdateEventParams } from "@/types/events";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { toast } from "sonner";
+import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -18,6 +19,8 @@ export default function EventDetails() {
   const [canEdit, setCanEdit] = useState<boolean>(false);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [editedEvent, setEditedEvent] = useState<Partial<EventDetail>>({});
+  const [isRegistered, setIsRegistered] = useState<boolean>(false);
+  const [hasPaidTicket, setHasPaidTicket] = useState<boolean>(false);
 
   // Fetch event data
   useEffect(() => {
@@ -45,6 +48,11 @@ export default function EventDetails() {
         // Check if user can edit this event
         if (isAuthenticated && user && eventData.team_id) {
           checkEditPermission(eventData.team_id);
+        }
+
+        // Check if user is registered for this event
+        if (isAuthenticated && user?.id) {
+          checkRegistrationStatus(eventData.id);
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load event");
@@ -132,6 +140,40 @@ export default function EventDetails() {
     } catch (err) {
       console.error("Failed to check edit permissions:", err);
       setCanEdit(false);
+    }
+  };
+
+  // Check if user is registered for this event and has a paid ticket
+  const checkRegistrationStatus = async (eventId: number) => {
+    if (!user?.id) return;
+
+    try {
+      // Check if registered
+      const isUserRegistered = await eventsApi.isUserRegistered(
+        eventId.toString(),
+        user.id.toString()
+      );
+      setIsRegistered(isUserRegistered);
+
+      // If registered, check if they have a paid ticket
+      if (isUserRegistered) {
+        try {
+          const ticketsResponse = await fetch(
+            `/api/tickets/user/${user.id}/event/${eventId}`
+          );
+          const ticketsData = await ticketsResponse.json();
+
+          // Check if there's at least one paid ticket
+          setHasPaidTicket(
+            ticketsData.tickets &&
+              ticketsData.tickets.some((ticket: any) => ticket.paid === true)
+          );
+        } catch (error) {
+          console.error("Failed to check ticket status:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check registration status:", error);
     }
   };
 
@@ -300,6 +342,47 @@ export default function EventDetails() {
             </div>
           </div>
         </div>
+
+        {/* Purchase ticket section */}
+        {event.price !== undefined &&
+          event.price !== null &&
+          event.price > 0 &&
+          isAuthenticated && (
+            <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold mb-2">Ticket Purchase</h2>
+                <p className="mb-4">
+                  {isRegistered
+                    ? hasPaidTicket
+                      ? "You have already purchased a ticket for this event."
+                      : "You are registered for this event. Complete your purchase to receive your ticket."
+                    : "Purchase your ticket to attend this event."}
+                </p>
+
+                {(!isRegistered || !hasPaidTicket) && (
+                  <div className="flex items-center gap-4">
+                    <p className="font-medium text-lg">
+                      ${(event.price ?? 0).toFixed(2)}
+                    </p>
+                    <StripeTicketCheckout
+                      event={event}
+                      buttonText={
+                        isRegistered ? "Complete Purchase" : "Buy Ticket"
+                      }
+                      disabled={event.status !== "published"}
+                    />
+                  </div>
+                )}
+
+                {event.status !== "published" && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Ticket sales are not available while the event is in{" "}
+                    {event.status} status.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
         <div className="flex space-x-4 mb-6">
           <Link to="/events" className="text-primary hover:underline">
