@@ -6,8 +6,33 @@ import {
 } from "@/types/events";
 
 const eventsApi = {
-  getAllEvents: () => {
-    return axiosClient.get("/events");
+  getAllEvents: (
+    sort_by: string = "start_time",
+    order: string = "asc",
+    limit: number = 10,
+    page: number = 1,
+    category?: string
+  ) => {
+    const params: Record<string, any> = {
+      sort_by,
+      order,
+      limit,
+      page,
+    };
+
+    if (category) {
+      params.category = category;
+    }
+
+    return axiosClient.get("/events", { params });
+  },
+
+  getEventCategories: () => {
+    return axiosClient.get(`/events/categories`);
+  },
+
+  getEventCategoryByName: (name: string) => {
+    return axiosClient.get(`/events/categories/${name}`);
   },
 
   getDraftEvents: () => {

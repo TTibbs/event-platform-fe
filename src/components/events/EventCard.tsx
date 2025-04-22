@@ -69,20 +69,58 @@ export function EventCard({
 
     // If returning from payment and this is the event that was paid for
     if (refreshFlag === "true" && pendingEventId === event.id.toString()) {
-      // Set has paid immediately to avoid flicker
-      if (ticketCacheKey) {
-        localStorage.setItem(ticketCacheKey, "true");
-        setHasPaidTicket(true);
-        setIsAlreadyRegistered(true);
+      // Trigger a refresh of the payment status from the server
+      if (userId) {
+        const checkPaidStatus = async () => {
+          try {
+            // This will check with the backend if payment was completed
+            const hasPaid = await ticketsApi.hasUserPaidForEvent(
+              userId.toString(),
+              event.id.toString()
+            );
+
+            if (hasPaid) {
+              console.log(
+                `User ${userId} has confirmed paid ticket for event ${event.id}`
+              );
+
+              // Update the local states
+              setHasPaidTicket(true);
+              setIsAlreadyRegistered(true);
+
+              // Update the cache
+              if (ticketCacheKey) {
+                localStorage.setItem(ticketCacheKey, "true");
+              }
+            } else {
+              console.log(
+                `User ${userId} does not have a paid ticket for event ${event.id}`
+              );
+              // Make sure the UI reflects the unpaid state
+              setHasPaidTicket(false);
+
+              // Clear any stale cache
+              if (ticketCacheKey) {
+                localStorage.removeItem(ticketCacheKey);
+              }
+            }
+          } catch (error) {
+            console.error("Error checking paid status after redirect:", error);
+          }
+        };
+
+        checkPaidStatus();
       }
 
-      // Just purchased, so clear the pending flag
+      // Clear session flags
+      sessionStorage.removeItem("pendingEventTicket");
+
+      // Only clear refreshTicketStatus if this is the event that was pending
       if (pendingEventId === event.id.toString()) {
-        sessionStorage.removeItem("pendingEventTicket");
         sessionStorage.removeItem("refreshTicketStatus");
       }
     }
-  }, [event.id, ticketCacheKey]);
+  }, [event.id, userId, ticketCacheKey]);
 
   // Check if user is registered or has ticket
   useEffect(() => {
@@ -312,7 +350,7 @@ export function EventCard({
           <div className={placeholderStyles}>
             <div className="flex flex-col items-center text-muted-foreground">
               <ImageIcon className="h-12 w-12 mb-2" />
-              <span className="text-sm">{event.event_type}</span>
+              <span className="text-sm">{event.category}</span>
             </div>
           </div>
         )}
@@ -326,8 +364,7 @@ export function EventCard({
           <div>
             <CardTitle className="text-xl">{event.title}</CardTitle>
             <CardDescription className="text-sm text-muted-foreground mt-1">
-              {event.event_type.charAt(0).toUpperCase() +
-                event.event_type.slice(1)}
+              {event.category}
             </CardDescription>
           </div>
           {!checkingPermissions && canEdit && (

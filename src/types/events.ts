@@ -10,7 +10,7 @@ export interface Event {
   price: number;
   max_attendees: number;
   status: "draft" | "published" | "cancelled" | string;
-  event_type: string;
+  category: string;
   creator_username: string;
   team_name: string;
   is_public: boolean;

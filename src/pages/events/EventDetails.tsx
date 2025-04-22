@@ -55,7 +55,7 @@ export default function EventDetails() {
 
   // Check if returning from payment flow
   useEffect(() => {
-    const checkPaymentStatus = () => {
+    const checkPaymentStatus = async () => {
       // Get stored event ID (the one that was just paid for)
       const pendingEventId = sessionStorage.getItem("pendingEventTicket");
       const refreshFlag = sessionStorage.getItem("refreshTicketStatus");
@@ -67,22 +67,51 @@ export default function EventDetails() {
         sessionStorage.removeItem("refreshTicketStatus");
       }
 
-      // If this is the specific event that was paid for
+      // If this is the specific event that was paid for, DON'T immediately mark as paid
+      // Instead, verify with the server first
       if (pendingEventId === id && user?.id) {
-        console.log(`This event (${id}) was just paid for by user ${user.id}`);
+        console.log(
+          `This event (${id}) was pending payment by user ${user.id}`
+        );
 
-        // Immediately mark as paid to prevent flicker
-        setIsRegistered(true);
-        setHasPaidTicket(true);
+        try {
+          // Verify actual payment status with the server before marking as paid
+          const isPaid = await ticketsApi.hasUserPaidForEvent(
+            user.id.toString(),
+            id.toString()
+          );
 
-        // Cache the paid status in localStorage
-        const ticketCacheKey = getTicketCacheKey();
-        if (ticketCacheKey) {
-          localStorage.setItem(ticketCacheKey, "true");
+          if (isPaid) {
+            console.log("Payment verified by server, marking as paid");
+            setIsRegistered(true);
+            setHasPaidTicket(true);
+
+            // Cache the paid status in localStorage
+            const ticketCacheKey = getTicketCacheKey();
+            if (ticketCacheKey) {
+              localStorage.setItem(ticketCacheKey, "true");
+            }
+          } else {
+            console.log(
+              "Server confirmed payment not completed, clearing pending status"
+            );
+            // Ensure we don't show as paid if the server says it's not paid
+            setHasPaidTicket(false);
+
+            // Clear any stale cache
+            const ticketCacheKey = getTicketCacheKey();
+            if (ticketCacheKey) {
+              localStorage.removeItem(ticketCacheKey);
+            }
+          }
+
+          // Clear the pendingEventTicket regardless of payment status
+          sessionStorage.removeItem("pendingEventTicket");
+        } catch (error) {
+          console.error("Failed to verify payment status:", error);
+          // On error, don't change payment status, but clear pending flag
+          sessionStorage.removeItem("pendingEventTicket");
         }
-
-        // Clear the pendingEventTicket
-        sessionStorage.removeItem("pendingEventTicket");
       }
     };
 
