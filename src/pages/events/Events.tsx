@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Event } from "@/types/events";
-import { Plus } from "lucide-react";
+import { Plus, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -53,6 +53,7 @@ export default function Events() {
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [itemsPerPage, setItemsPerPage] = useState<number>(6);
   const [sortSelectValue, setSortSelectValue] = useState<string>("newest");
+  const [showPastEvents, setShowPastEvents] = useState<boolean>(false);
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -139,10 +140,32 @@ export default function Events() {
     fetchAllEvents();
   }, []);
 
-  // Fetch events from API with proper sorting and pagination
+  // Add new effect for fetching past events
   useEffect(() => {
-    // Don't fetch paginated events if we're searching
-    if (isSearching) return;
+    if (!showPastEvents) return;
+
+    const fetchPastEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await eventsApi.getPastEvents();
+        setEvents(response.data.events || []);
+        setTotalPages(response.data.total_pages || 1);
+        setTotalEvents(response.data.events?.length || 0);
+      } catch (err: any) {
+        setError(err?.message || "Failed to load past events");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPastEvents();
+  }, [showPastEvents]);
+
+  // Modify existing events fetch effect
+  useEffect(() => {
+    // Don't fetch paginated events if we're searching or showing past events
+    if (isSearching || showPastEvents) return;
 
     const fetchEvents = async () => {
       try {
@@ -189,6 +212,7 @@ export default function Events() {
     currentPage,
     itemsPerPage,
     isSearching,
+    showPastEvents,
   ]);
 
   // Apply search filter client-side with improved state transitions
@@ -463,64 +487,91 @@ export default function Events() {
     <div className="container mx-auto px-4 py-8">
       <section className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Find Your Next Event</h1>
-          {canCreateEvent && (
-            <Button onClick={handleCreateEvent} className="ml-4">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Event
+          <h1 className="text-3xl font-bold">
+            {showPastEvents ? "Past Events" : "Find Your Next Event"}
+          </h1>
+          <div className="flex gap-2 ml-4">
+            <Button
+              variant={showPastEvents ? "outline" : "default"}
+              onClick={() => {
+                setShowPastEvents(false);
+                setCurrentPage(1);
+              }}
+            >
+              Upcoming Events
             </Button>
-          )}
-        </div>
-        <div className="flex flex-col md:flex-row items-center gap-2">
-          <div className="relative w-full md:w-auto">
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search events"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pr-8 w-full"
-            />
-            {searchQuery && (
-              <button
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={handleClearSearch}
-                aria-label="Clear search"
-                type="button"
-              >
-                &times;
-              </button>
+            <Button
+              variant={showPastEvents ? "default" : "outline"}
+              onClick={() => {
+                setShowPastEvents(true);
+                setCurrentPage(1);
+              }}
+            >
+              <History className="mr-2 h-4 w-4" />
+              Past Events
+            </Button>
+            {canCreateEvent && (
+              <Button onClick={handleCreateEvent}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Event
+              </Button>
             )}
           </div>
-          <Select onValueChange={handleCategoryChange} value={categoryFilter}>
-            <SelectTrigger className="w-full md:w-auto">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.name}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select onValueChange={handleSortChange} value={sortSelectValue}>
-            <SelectTrigger className="w-full md:w-auto">
-              <SelectValue placeholder="Order by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="A-Z">Name (A-Z)</SelectItem>
-              <SelectItem value="Z-A">Name (Z-A)</SelectItem>
-              <SelectItem value="price_low">Price (Low to High)</SelectItem>
-              <SelectItem value="price_high">Price (High to Low)</SelectItem>
-              <SelectItem value="newest">Date (Nearest First)</SelectItem>
-              <SelectItem value="oldest">Date (Furthest First)</SelectItem>
-              <SelectItem value="location">Location</SelectItem>
-              <SelectItem value="capacity">Capacity</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
+
+        {/* Only show filters for upcoming events */}
+        {!showPastEvents && (
+          <div className="flex flex-col md:flex-row items-center gap-2">
+            <div className="relative w-full md:w-auto">
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search events"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="pr-8 w-full"
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={handleClearSearch}
+                  aria-label="Clear search"
+                  type="button"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+            <Select onValueChange={handleCategoryChange} value={categoryFilter}>
+              <SelectTrigger className="w-full md:w-auto">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select onValueChange={handleSortChange} value={sortSelectValue}>
+              <SelectTrigger className="w-full md:w-auto">
+                <SelectValue placeholder="Order by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="A-Z">Name (A-Z)</SelectItem>
+                <SelectItem value="Z-A">Name (Z-A)</SelectItem>
+                <SelectItem value="price_low">Price (Low to High)</SelectItem>
+                <SelectItem value="price_high">Price (High to Low)</SelectItem>
+                <SelectItem value="newest">Date (Nearest First)</SelectItem>
+                <SelectItem value="oldest">Date (Furthest First)</SelectItem>
+                <SelectItem value="location">Location</SelectItem>
+                <SelectItem value="capacity">Capacity</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </section>
 
       {/* Top pagination and event count - more stable rendering */}

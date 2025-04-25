@@ -431,7 +431,9 @@ export default function EventDetails() {
             <div className="mb-4">
               <h2 className="text-xl font-semibold mb-2">Ticket Purchase</h2>
               <p className="mb-4">
-                {isRegistered
+                {event.is_past
+                  ? "This event has already ended."
+                  : isRegistered
                   ? hasPaidTicket
                     ? "You have already purchased a ticket for this event."
                     : "You are registered for this event. Complete your purchase to receive your ticket."
@@ -442,25 +444,31 @@ export default function EventDetails() {
                 <p className="font-medium text-lg">
                   ${(event.price ?? 0).toFixed(2)}
                 </p>
-                <StripeTicketCheckout
-                  event={event}
-                  buttonText={
-                    hasPaidTicket
-                      ? "Ticket Purchased"
-                      : isRegistered
-                      ? "Complete Purchase"
-                      : "Buy Ticket"
-                  }
-                  disabled={event.status !== "published" || hasPaidTicket}
-                  className={`${
-                    hasPaidTicket
-                      ? "bg-green-600 hover:bg-green-600 text-white"
-                      : ""
-                  } disabled:cursor-not-allowed`}
-                />
+                {event.is_past ? (
+                  <Button disabled className="bg-muted">
+                    Event Ended
+                  </Button>
+                ) : (
+                  <StripeTicketCheckout
+                    event={event}
+                    buttonText={
+                      hasPaidTicket
+                        ? "Ticket Purchased"
+                        : isRegistered
+                        ? "Complete Purchase"
+                        : "Buy Ticket"
+                    }
+                    disabled={event.status !== "published" || hasPaidTicket}
+                    className={`${
+                      hasPaidTicket
+                        ? "bg-green-600 hover:bg-green-600 text-white"
+                        : ""
+                    } disabled:cursor-not-allowed`}
+                  />
+                )}
               </div>
 
-              {event.status !== "published" && (
+              {event.status !== "published" && !event.is_past && (
                 <p className="text-sm text-muted-foreground mt-2">
                   Ticket sales are not available while the event is in{" "}
                   {event.status} status.

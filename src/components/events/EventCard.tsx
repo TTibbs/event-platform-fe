@@ -446,7 +446,7 @@ export function EventCard({
               Details
             </Button>
 
-            {userId && isPublished && (
+            {userId && isPublished && !event.is_past && (
               <>
                 {checkingRegistration ? (
                   <Button disabled className="flex-1">
@@ -489,6 +489,11 @@ export function EventCard({
                   </Button>
                 )}
               </>
+            )}
+            {userId && isPublished && event.is_past && (
+              <Button disabled className="flex-1 bg-muted">
+                Event Ended
+              </Button>
             )}
           </div>
         </div>

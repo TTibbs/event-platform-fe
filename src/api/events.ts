@@ -27,6 +27,10 @@ const eventsApi = {
     return axiosClient.get("/events", { params });
   },
 
+  getPastEvents: () => {
+    return axiosClient.get("/events/past");
+  },
+
   getEventCategories: () => {
     return axiosClient.get(`/events/categories`);
   },

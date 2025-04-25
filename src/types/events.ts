@@ -14,6 +14,7 @@ export interface Event {
   creator_username: string;
   team_name: string;
   is_public: boolean;
+  is_past: boolean;
   created_at: string;
   updated_at: string;
   created_by: number;
