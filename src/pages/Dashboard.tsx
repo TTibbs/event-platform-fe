@@ -276,7 +276,7 @@ function DashboardOverview({
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Draft Events</h2>
           <Button
-            className="bg-primary hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 cursor-pointer"
             onClick={() => navigate("/events/create")}
           >
             Create New Event
