@@ -14,6 +14,12 @@ import usersApi from "@/api/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import EventsCalendar from "@/components/events/EventsCalendar";
 import { UserTeam } from "@/types/users";
@@ -28,6 +34,7 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [userData, setUserData] = useState<any>(null);
   const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,6 +114,10 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarClick = () => {
+    setIsImageDialogOpen(true);
+  };
+
   if (!user) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
@@ -144,6 +155,8 @@ export default function Profile() {
                 <AvatarImage
                   src={displayData.profile_image_url}
                   alt={displayData.username || "User"}
+                  onClick={handleAvatarClick}
+                  className="cursor-pointer"
                 />
               )}
               <AvatarFallback className="text-xl">
@@ -256,6 +269,22 @@ export default function Profile() {
           </Card>
         )}
       </div>
+
+      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+        <DialogTitle className="sr-only">Profile Image</DialogTitle>
+        <DialogDescription className="sr-only">Profile Image</DialogDescription>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <div className="flex justify-center items-center p-10">
+            {displayData.profile_image_url && (
+              <img
+                src={displayData.profile_image_url}
+                alt={displayData.username || "User"}
+                className="max-h-[80vh] max-w-full object-contain"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Events Calendar Section */}
       {user && user.id && (
