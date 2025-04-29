@@ -14,13 +14,13 @@ export const testimonials = [
   {
     quote:
       "I was able to find a new hobby and meet some great people at the event. I'll definitely be back next year!",
-    name: "John Doe",
+    name: "Jim Doe",
     title: "Software Engineer",
   },
   {
     quote:
       "The event was a great way to learn about new technologies and network with other professionals. I'll definitely be back next year!",
-    name: "Jane Smith",
+    name: "Janet Smith",
     title: "Marketing Manager",
   },
 ];

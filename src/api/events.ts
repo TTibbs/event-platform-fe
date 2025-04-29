@@ -43,6 +43,10 @@ const eventsApi = {
     return axiosClient.get("/events/draft");
   },
 
+  getTeamDraftEvents: (teamId: string) => {
+    return axiosClient.get(`/events/team/${teamId}/draft`);
+  },
+
   getDraftEventById: (id: string) => {
     return axiosClient.get(`/events/${id}/draft`);
   },

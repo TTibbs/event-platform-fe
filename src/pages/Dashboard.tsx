@@ -19,7 +19,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
-import { Pencil, FilePlus, Calendar, FileText, Home } from "lucide-react";
+import { FilePlus, Calendar, FileText, Home } from "lucide-react";
 
 export default function Dashboard() {
   const [draftEvents, setDraftEvents] = useState<Event[]>([]);
@@ -28,7 +28,8 @@ export default function Dashboard() {
   const [error, setError] = useState<Error | null>(null);
   const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>("overview");
-  const { user } = useAuth();
+  const [teamId, setTeamId] = useState<number | null>(null);
+  const { user, updateUserData } = useAuth();
   const navigate = useNavigate();
 
   // Check if user is a member of any team
@@ -39,7 +40,17 @@ export default function Dashboard() {
       try {
         const response = await teamsApi.getMemberByUserId(user.id.toString());
         // If we get a successful response, the user is a team member
-        setIsTeamMember(!!response.data);
+        if (response.data && response.data.teamMember) {
+          const teamMemberData = response.data.teamMember;
+          setIsTeamMember(true);
+          setTeamId(teamMemberData.team_id);
+
+          // Update user data with team information
+          updateUserData({ teamId: teamMemberData.team_id });
+        } else {
+          setIsTeamMember(false);
+          navigate("/profile");
+        }
       } catch (err) {
         // If we get an error, user is not a team member
         setIsTeamMember(false);
@@ -49,15 +60,15 @@ export default function Dashboard() {
     };
 
     checkTeamMembership();
-  }, [user, navigate]);
+  }, [user, navigate, updateUserData]);
 
   useEffect(() => {
     const fetchDraftEvents = async () => {
-      if (!isTeamMember) return; // Skip fetching draft events for non-team members
+      if (!isTeamMember || !teamId) return; // Skip fetching draft events for non-team members or if teamId is not set
 
       setLoading(true);
       try {
-        const response = await eventsApi.getDraftEvents();
+        const response = await eventsApi.getTeamDraftEvents(teamId.toString());
         setDraftEvents(response.data.events || []);
       } catch (err: any) {
         setError(
@@ -70,7 +81,7 @@ export default function Dashboard() {
       }
     };
     fetchDraftEvents();
-  }, [isTeamMember]);
+  }, [isTeamMember, teamId]);
 
   useEffect(() => {
     const fetchAllEvents = async () => {
@@ -135,9 +146,6 @@ export default function Dashboard() {
         return <AllEventsList events={allEvents} userId={user?.id} />;
       case "create-event":
         navigate("/events/create");
-        return null;
-      case "manage-events":
-        navigate("/events");
         return null;
       default:
         return (
@@ -216,15 +224,6 @@ export default function Dashboard() {
                       >
                         <FilePlus className="mr-2" />
                         <span>Create New Event</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        onClick={() => setActiveSection("manage-events")}
-                        className="cursor-pointer"
-                      >
-                        <Pencil className="mr-2" />
-                        <span>Manage & Edit Events</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
