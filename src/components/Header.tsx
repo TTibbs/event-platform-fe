@@ -191,7 +191,7 @@ const Header = () => {
                         </DropdownMenuItem>
                       </div>
                       <DropdownMenuSeparator />
-                      <div className="p-2">
+                      <div className="py-2">
                         <ThemeToggle
                           showLabel={true}
                           className="rounded-md w-full"
