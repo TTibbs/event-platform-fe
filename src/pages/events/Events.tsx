@@ -44,7 +44,6 @@ export default function Events() {
   const [sortBy, setSortBy] = useState<string>("start_time");
   const [sortOrder, setSortOrder] = useState<string>("asc");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalEvents, setTotalEvents] = useState<number>(0);
@@ -66,8 +65,6 @@ export default function Events() {
         setCategories(response.data.categories || []);
       } catch (err) {
         console.error("Failed to fetch categories:", err);
-      } finally {
-        setLoadingCategories(false);
       }
     };
 

@@ -40,7 +40,7 @@ export interface CreateEventParams {
   location?: string;
   price?: number;
   max_attendees?: number;
-  event_type?: string;
+  category?: string;
   is_public?: boolean;
   team_id?: number;
   event_img_url?: string;
@@ -56,7 +56,7 @@ export interface UpdateEventParams {
   price?: number;
   max_attendees?: number;
   status?: "draft" | "published" | "cancelled";
-  event_type?: string;
+  category?: string;
   is_public?: boolean;
   team_id?: number | string;
   event_img_url?: string;

@@ -35,7 +35,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be 0 or greater"),
   max_attendees: z.coerce.number().min(1, "Must allow at least 1 attendee"),
   status: z.enum(["published", "draft"]),
-  event_type: z.string().min(1, "Event type is required"),
+  category: z.string().min(1, "Event type is required"),
   is_public: z.boolean().default(true),
   event_img_url: z.string().optional(),
 });
@@ -74,7 +74,7 @@ export default function EventForm({
       price: event?.price ?? 0,
       max_attendees: event?.max_attendees ?? 10,
       status: (event?.status as "draft" | "published") || "draft",
-      event_type: event?.event_type || "",
+      category: event?.category || "",
       is_public: event?.is_public ?? true,
       event_img_url: event?.event_img_url || "",
     },
@@ -249,7 +249,7 @@ export default function EventForm({
 
           <FormField
             control={form.control as any}
-            name="event_type"
+            name="category"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Event Type</FormLabel>
@@ -278,7 +278,7 @@ export default function EventForm({
 
           <div className="space-y-2">
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="event_img_url"
               render={({ field }) => (
                 <FormItem>

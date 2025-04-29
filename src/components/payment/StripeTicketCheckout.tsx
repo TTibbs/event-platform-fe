@@ -23,8 +23,6 @@ export default function StripeTicketCheckout({
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [verifiedPaid, setVerifiedPaid] = useState<boolean>(false);
-  const [verificationChecked, setVerificationChecked] =
-    useState<boolean>(false);
 
   // Check for pending checkout sessions when component mounts
   useEffect(() => {
@@ -94,8 +92,6 @@ export default function StripeTicketCheckout({
             setVerifiedPaid(true);
           }
         }
-
-        setVerificationChecked(true);
       } catch (error) {
         console.error("Error verifying ticket status:", error);
       } finally {

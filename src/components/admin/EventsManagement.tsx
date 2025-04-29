@@ -312,7 +312,7 @@ export default function EventsManagement({
       team_id: event.team_id,
       status: event.status as "draft" | "published" | "cancelled",
       is_public: event.is_public,
-      event_type: event.event_type,
+      category: event.category,
     });
 
     setFormErrors({});
@@ -969,7 +969,7 @@ export default function EventsManagement({
                       target: { name: "event_type", value },
                     } as React.ChangeEvent<HTMLSelectElement>)
                   }
-                  value={editedEvent.event_type}
+                  value={editedEvent.category}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select event type" />
