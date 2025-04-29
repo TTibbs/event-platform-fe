@@ -440,7 +440,7 @@ export function EventCard({
           <div className="w-full flex space-x-2">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 cursor-pointer"
               onClick={() => navigate(`/events/${event.id}`)}
             >
               Details

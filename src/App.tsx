@@ -14,6 +14,7 @@ import Dashboard from "@/pages/Dashboard";
 import EventDetails from "@/pages/events/EventDetails";
 import AdminDashboard from "@/pages/AdminDashboard";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -34,12 +35,7 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/admin/*" element={<AdminDashboard />} />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
-                <Route
-                  path="*"
-                  element={
-                    <div className="text-center py-10">Page not found</div>
-                  }
-                />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
             <Toaster />

@@ -25,22 +25,6 @@ export default function Footer() {
                   Events
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/dashboard"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/events/create"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Create Event
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -49,7 +33,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  to="/help"
+                  to="/"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Help Center
@@ -57,7 +41,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  to="/contact"
+                  to="/"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Contact Us
@@ -65,7 +49,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  to="/privacy"
+                  to="/"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Privacy Policy

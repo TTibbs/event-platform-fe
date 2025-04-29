@@ -91,3 +91,8 @@ export interface CardItem {
   content: React.ReactNode;
   footer: React.ReactNode;
 }
+
+export interface Category {
+  id: number;
+  name: string;
+}

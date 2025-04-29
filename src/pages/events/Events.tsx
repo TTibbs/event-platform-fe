@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import eventsApi from "@/api/events";
-import teamsApi from "@/api/teams";
-import usersApi from "@/api/users";
 import { EventsList } from "@/components/events/EventsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { Event } from "@/types/events";
-import { Plus, History } from "lucide-react";
+import { History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -33,12 +31,11 @@ type Category = {
 
 export default function Events() {
   const searchInputRef = useRef<HTMLInputElement>(null);
-
+  const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [canCreateEvent, setCanCreateEvent] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<Event[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -58,7 +55,6 @@ export default function Events() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { user } = useAuth();
-  const navigate = useNavigate();
   // Get current user ID (if authenticated)
   const currentUserId = user?.id;
 
@@ -77,49 +73,6 @@ export default function Events() {
 
     fetchCategories();
   }, []);
-
-  // Check if user can create events (team member with admin or event organiser role)
-  useEffect(() => {
-    const checkCreateEventPermission = async () => {
-      if (!user?.id) {
-        setCanCreateEvent(false);
-        return;
-      }
-
-      try {
-        // Check if user is a team member
-        const memberResponse = await teamsApi.getMemberByUserId(
-          user.id.toString()
-        );
-        if (!memberResponse.data) {
-          // Even if not a team member, check if site admin
-          const userResponse = await usersApi.getUserById(user.id.toString());
-          const userData = userResponse.data.user;
-          if (userData.is_site_admin) {
-            setCanCreateEvent(true);
-            return;
-          }
-
-          setCanCreateEvent(false);
-          return;
-        }
-
-        // Check user's role
-        const roleResponse = await teamsApi.getMemberRoleByUserId(
-          user.id.toString()
-        );
-        const role = roleResponse.data?.role;
-
-        // Allow creating events if site admin, team admin or event organiser
-        setCanCreateEvent(role === "team_admin" || role === "event organiser");
-      } catch (err) {
-        // If error, user can't create events
-        setCanCreateEvent(false);
-      }
-    };
-
-    checkCreateEventPermission();
-  }, [user]);
 
   // Fetch all events for searching (limit to 100)
   useEffect(() => {
@@ -304,10 +257,6 @@ export default function Events() {
     };
   }, [searchQuery, allEvents, categoryFilter, sortBy, sortOrder]);
 
-  const handleCreateEvent = () => {
-    navigate("/events/create");
-  };
-
   // Update handleSearchChange to avoid unnecessary loading state changes for very short inputs
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -319,10 +268,42 @@ export default function Events() {
     }
   };
 
+  // Initialize state from URL parameters
+  useEffect(() => {
+    const category = searchParams.get("category") || "All";
+    const sort = searchParams.get("sort") || "newest";
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const perPage = parseInt(searchParams.get("perPage") || "6", 10);
+
+    setCategoryFilter(category);
+    setSortSelectValue(sort);
+    setCurrentPage(page);
+    setItemsPerPage(perPage);
+
+    // Apply sort settings based on URL parameter
+    handleSortChange(sort);
+  }, []);
+
+  // Update URL when filters change
+  const updateUrlParams = (updates: Record<string, string>) => {
+    const newParams = new URLSearchParams(searchParams);
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value !== "All" && value !== "newest" && value !== "6") {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+    });
+
+    setSearchParams(newParams);
+  };
+
   const handleCategoryChange = (value: string) => {
     // Reset to page 1 when changing category
     setCurrentPage(1);
     setCategoryFilter(value);
+    updateUrlParams({ category: value, page: "1" });
   };
 
   const handleSortChange = (value: string) => {
@@ -331,6 +312,9 @@ export default function Events() {
 
     // Update the select value immediately
     setSortSelectValue(value);
+
+    // Update URL
+    updateUrlParams({ sort: value, page: "1" });
 
     if (value === "A-Z") {
       // Handle alphabetical sorting client-side since title isn't a valid sortBy param for API
@@ -373,7 +357,6 @@ export default function Events() {
     }
   };
 
-  // Update the pagination page change function
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
 
@@ -386,11 +369,13 @@ export default function Events() {
     }
 
     setCurrentPage(page);
+    updateUrlParams({ page: page.toString() });
   };
 
   const handleItemsPerPageChange = (value: string) => {
     setCurrentPage(1); // Reset to first page
     setItemsPerPage(Number(value));
+    updateUrlParams({ perPage: value, page: "1" });
   };
 
   if (loading && !isSearching) {
@@ -423,6 +408,7 @@ export default function Events() {
         <PaginationLink
           onClick={() => handlePageChange(1)}
           isActive={currentPage === 1}
+          className="cursor-pointer"
         >
           1
         </PaginationLink>
@@ -473,6 +459,7 @@ export default function Events() {
           <PaginationLink
             onClick={() => handlePageChange(totalPages)}
             isActive={currentPage === totalPages}
+            className="cursor-pointer"
           >
             {totalPages}
           </PaginationLink>
@@ -497,6 +484,7 @@ export default function Events() {
                 setShowPastEvents(false);
                 setCurrentPage(1);
               }}
+              className="cursor-pointer"
             >
               Upcoming Events
             </Button>
@@ -506,16 +494,11 @@ export default function Events() {
                 setShowPastEvents(true);
                 setCurrentPage(1);
               }}
+              className="cursor-pointer"
             >
               <History className="mr-2 h-4 w-4" />
               Past Events
             </Button>
-            {canCreateEvent && (
-              <Button onClick={handleCreateEvent}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Event
-              </Button>
-            )}
           </div>
         </div>
 
@@ -611,7 +594,9 @@ export default function Events() {
                   <PaginationPrevious
                     onClick={() => handlePageChange(currentPage - 1)}
                     className={
-                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
                     }
                   />
                 </PaginationItem>
@@ -624,7 +609,7 @@ export default function Events() {
                     className={
                       currentPage === totalPages
                         ? "pointer-events-none opacity-50"
-                        : ""
+                        : "cursor-pointer"
                     }
                   />
                 </PaginationItem>
@@ -670,7 +655,9 @@ export default function Events() {
                 <PaginationPrevious
                   onClick={() => handlePageChange(currentPage - 1)}
                   className={
-                    currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                    currentPage === 1
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
                   }
                 />
               </PaginationItem>
@@ -683,7 +670,7 @@ export default function Events() {
                   className={
                     currentPage === totalPages
                       ? "pointer-events-none opacity-50"
-                      : ""
+                      : "cursor-pointer"
                   }
                 />
               </PaginationItem>

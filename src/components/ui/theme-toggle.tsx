@@ -18,7 +18,7 @@ export function ThemeToggle({
       <Button
         variant="ghost"
         onClick={toggleTheme}
-        className={`flex items-center justify-between gap-2 w-full ${className}`}
+        className={`flex items-center justify-between gap-2 w-full cursor-pointer ${className}`}
         aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
       >
         <span className="flex items-center gap-2">
@@ -40,7 +40,7 @@ export function ThemeToggle({
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={className}
+      className={`cursor-pointer ${className}`}
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
       {theme === "dark" ? (

@@ -351,15 +351,6 @@ export default function EventDetails() {
   if (!event)
     return <div className="container mx-auto px-4 py-8">Event not found</div>;
 
-  // Debug logging for edit permission check
-  console.log("Render conditions for edit button:", {
-    canEdit,
-    "user?.id": user?.id,
-    "event.created_by": event.created_by,
-    "user is creator?": user?.id === event.created_by,
-    "edit button should show?": canEdit || user?.id === event.created_by,
-  });
-
   return (
     <section className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">

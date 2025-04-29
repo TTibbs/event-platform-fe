@@ -155,7 +155,9 @@ export default function StripeTicketCheckout({
   return (
     <Button
       onClick={handleCheckout}
-      className={className}
+      className={`${className} ${
+        !disabled && !isLoading && !verifiedPaid ? "cursor-pointer" : ""
+      }`}
       disabled={disabled || isLoading || verifiedPaid}
     >
       {isLoading
