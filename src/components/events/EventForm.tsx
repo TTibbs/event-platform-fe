@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import eventsApi from "@/api/events";
-import { Event } from "@/types/events";
+import { Category, Event } from "@/types/events";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -51,9 +51,16 @@ export default function EventForm({
   event,
   isEditing = false,
 }: EventFormProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    eventsApi.getEventCategories().then((res) => {
+      setCategories(res.data.categories);
+    });
+  }, []);
 
   // Format datetime string for input fields
   const formatDateForInput = (dateString: string) => {
@@ -222,7 +229,7 @@ export default function EventForm({
                     <Input
                       type="number"
                       min="0"
-                      step="0.01"
+                      step="1"
                       placeholder="0.00"
                       {...field}
                     />
@@ -252,23 +259,22 @@ export default function EventForm({
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Event Type</FormLabel>
+                <FormLabel>Category</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select event type" />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="meetup">Meetup</SelectItem>
-                    <SelectItem value="workshop">Workshop</SelectItem>
-                    <SelectItem value="conference">Conference</SelectItem>
-                    <SelectItem value="social">Social</SelectItem>
-                    <SelectItem value="training">Training</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
