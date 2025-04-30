@@ -68,6 +68,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isSiteAdmin, setIsSiteAdmin] = useState<boolean>(false);
   const navigate = useNavigate();
 
+  // Fetch complete user data from the API
+  const fetchUserData = async (userId: number) => {
+    try {
+      const response = await usersApi.getUserById(userId.toString());
+      const userData = response.data.user;
+
+      // Update user state with complete data including teams
+      setUser(userData);
+
+      // Update localStorage with complete user data
+      localStorage.setItem("userData", JSON.stringify(userData));
+
+      // Update admin status
+      setIsSiteAdmin(!!userData.is_site_admin);
+
+      return userData;
+    } catch (error) {
+      console.error("Failed to fetch user data:", error);
+      return null;
+    }
+  };
+
   // Check if current user is a site admin using dedicated endpoint
   const checkSiteAdmin = async () => {
     if (!isAuthenticated || !user?.id) return;
@@ -104,26 +126,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (token && userData) {
         try {
+          // Parse initial user data from localStorage
           const parsedUserData = JSON.parse(userData);
+
+          // Set initial user state
           setUser(parsedUserData);
           setIsAuthenticated(true);
 
           // Initial setting based on stored user data
           setIsSiteAdmin(!!parsedUserData.is_site_admin);
 
-          // Then verify with the API
+          // Then fetch complete and up-to-date user data from API
           if (parsedUserData.id) {
-            try {
-              const response = await usersApi.getIsSiteAdmin(
-                parsedUserData.id.toString()
-              );
-              setIsSiteAdmin(response.data.is_site_admin === true);
-            } catch (adminError) {
-              console.error(
-                "Failed to check admin status on init:",
-                adminError
-              );
-            }
+            await fetchUserData(parsedUserData.id);
           }
         } catch (e) {
           console.error("Failed to parse user data:", e);
@@ -169,26 +184,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Invalid response from server");
       }
 
-      // Store tokens and user data
+      // Store tokens
       localStorage.setItem("token", responseData.accessToken);
       localStorage.setItem("refreshToken", responseData.refreshToken);
-      localStorage.setItem("userData", JSON.stringify(responseData.user));
 
-      // Update state
-      setUser(responseData.user);
+      // Set initial user data from login response
+      const initialUserData = responseData.user;
+      localStorage.setItem("userData", JSON.stringify(initialUserData));
+
+      // Update authentication state
+      setUser(initialUserData);
       setIsAuthenticated(true);
 
-      // Check if the user is a site admin after login
-      if (responseData.user.id) {
-        try {
-          const adminResponse = await usersApi.getIsSiteAdmin(
-            responseData.user.id.toString()
-          );
-          setIsSiteAdmin(adminResponse.data.is_site_admin === true);
-        } catch (adminError) {
-          console.error("Failed to check admin status on login:", adminError);
-          setIsSiteAdmin(false);
-        }
+      // Fetch complete user data including teams from API
+      if (initialUserData.id) {
+        await fetchUserData(initialUserData.id);
       }
 
       // Trigger storage event for other tabs
