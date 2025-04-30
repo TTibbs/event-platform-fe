@@ -10,8 +10,8 @@ import {
 
 export default function Dashboard() {
   const {
-    draftEvents,
-    allEvents,
+    teamDraftEvents,
+    teamEvents,
     loading,
     error,
     isTeamMember,
@@ -49,23 +49,23 @@ export default function Dashboard() {
       case "overview":
         return (
           <DashboardOverview
-            draftEvents={draftEvents}
-            allEvents={allEvents}
+            draftEvents={teamDraftEvents}
+            allEvents={teamEvents}
             userId={user?.id}
           />
         );
       case "draft-events":
-        return <DraftEventsList events={draftEvents} userId={user?.id} />;
+        return <DraftEventsList events={teamDraftEvents} userId={user?.id} />;
       case "all-events":
-        return <AllEventsList events={allEvents} userId={user?.id} />;
+        return <AllEventsList events={teamEvents} userId={user?.id} />;
       case "create-event":
         navigate("/events/create");
         return null;
       default:
         return (
           <DashboardOverview
-            draftEvents={draftEvents}
-            allEvents={allEvents}
+            draftEvents={teamDraftEvents}
+            allEvents={teamEvents}
             userId={user?.id}
           />
         );

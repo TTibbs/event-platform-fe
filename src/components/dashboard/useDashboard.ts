@@ -6,8 +6,8 @@ import teamsApi from "@/api/teams";
 import { Event } from "@/types/events";
 
 export function useDashboard() {
-  const [draftEvents, setDraftEvents] = useState<Event[]>([]);
-  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [teamDraftEvents, setTeamDraftEvents] = useState<Event[]>([]);
+  const [teamEvents, setTeamEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
@@ -48,13 +48,13 @@ export function useDashboard() {
 
   // Fetch draft events when teamId is available
   useEffect(() => {
-    const fetchDraftEvents = async () => {
+    const fetchTeamDraftEvents = async () => {
       if (!isTeamMember || !teamId) return;
 
       setLoading(true);
       try {
         const response = await eventsApi.getTeamDraftEvents(teamId.toString());
-        setDraftEvents(response.data.events || []);
+        setTeamDraftEvents(response.data.events || []);
       } catch (err: any) {
         setError(
           err instanceof Error
@@ -66,18 +66,18 @@ export function useDashboard() {
       }
     };
 
-    fetchDraftEvents();
+    fetchTeamDraftEvents();
   }, [isTeamMember, teamId]);
 
   // Fetch all events when user is a team member
   useEffect(() => {
-    const fetchAllEvents = async () => {
-      if (!isTeamMember) return;
+    const fetchTeamEvents = async () => {
+      if (!teamId) return;
 
       setLoading(true);
       try {
-        const response = await eventsApi.getAllEvents();
-        setAllEvents(response.data.events || []);
+        const response = await eventsApi.getEventsByTeam(teamId.toString());
+        setTeamEvents(response.data.events || []);
       } catch (err: any) {
         setError(
           err instanceof Error
@@ -89,14 +89,12 @@ export function useDashboard() {
       }
     };
 
-    if (isTeamMember) {
-      fetchAllEvents();
-    }
-  }, [isTeamMember]);
+    fetchTeamEvents();
+  }, [teamId]);
 
   return {
-    draftEvents,
-    allEvents,
+    teamDraftEvents,
+    teamEvents,
     loading,
     error,
     isTeamMember,
