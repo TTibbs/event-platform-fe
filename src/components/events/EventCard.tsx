@@ -42,7 +42,6 @@ export interface EventCardOptions {
   imageHeight?: string;
   titleLines?: number;
   descriptionLines?: number;
-  titleOverlay?: boolean;
 }
 
 const defaultOptions: EventCardOptions = {
@@ -58,7 +57,6 @@ const defaultOptions: EventCardOptions = {
   imageHeight: "h-56",
   titleLines: 1,
   descriptionLines: 2,
-  titleOverlay: false,
 };
 
 export function EventCard({
@@ -187,14 +185,11 @@ export function EventCard({
 
   // Title and description line clamping
   const titleClamp = cn(`font-semibold text-xl line-clamp-${opts.titleLines}`);
-  const descriptionClamp = cn(
-    `line-clamp-${opts.descriptionLines} text-muted-foreground`
-  );
 
   return (
     <Card className={cardStyles}>
       {opts.showImage && (
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden p-0 m-0">
           {!imageError && event.event_img_url ? (
             <img
               src={event.event_img_url}
@@ -215,7 +210,7 @@ export function EventCard({
           <div className="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-background text-foreground shadow">
             {isPublished ? "Published" : "Draft"}
           </div>
-          {!checkingPermissions && canEdit && opts.titleOverlay && (
+          {!checkingPermissions && canEdit && (
             <div className="absolute top-2 left-2">
               <Button
                 variant="outline"
@@ -228,28 +223,11 @@ export function EventCard({
               </Button>
             </div>
           )}
-          {opts.titleOverlay && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
-              <h3
-                className={cn(
-                  "text-white text-xl font-bold",
-                  `line-clamp-${opts.titleLines}`
-                )}
-              >
-                {event.title}
-              </h3>
-              {opts.showCategory && (
-                <span className="text-white/80 text-sm mt-1">
-                  {event.category}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {(!opts.titleOverlay || !opts.showImage) && (
-        <CardHeader className="p-4">
+      <div className="flex flex-col h-[calc(100%-208px)]">
+        <CardHeader className="p-4 pb-0">
           <div className="flex justify-between items-start">
             <div className="space-y-1">
               <CardTitle className={titleClamp}>{event.title}</CardTitle>
@@ -259,7 +237,7 @@ export function EventCard({
                 </CardDescription>
               )}
             </div>
-            {!checkingPermissions && canEdit && (
+            {!opts.showImage && !checkingPermissions && canEdit && (
               <Button variant="outline" size="sm" onClick={handleEditEvent}>
                 <PencilIcon className="h-3.5 w-3.5" />
                 <span className="ml-1">Edit</span>
@@ -267,85 +245,61 @@ export function EventCard({
             )}
           </div>
         </CardHeader>
-      )}
 
-      <CardContent
-        className={cn(
-          "p-4",
-          (opts.titleOverlay && opts.showImage) || !opts.showImage
-            ? "pt-2"
-            : "pt-0"
-        )}
-      >
-        <div className="space-y-3">
-          {opts.showTimeDetails && (
-            <div className="flex items-center text-sm">
-              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-              <div className="ml-0">
-                {formattedStartDate}, {formattedStartTime} - {formattedEndTime}
+        <CardContent className="p-4 flex-1">
+          <div className="space-y-3">
+            {opts.showTimeDetails && (
+              <div className="flex items-center text-sm">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <div className="ml-0">
+                  {formattedStartDate}, {formattedStartTime} -{" "}
+                  {formattedEndTime}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {opts.showLocation && (
-            <div className="flex items-center text-sm">
-              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-              <div className="ml-0">
-                {event.location || "Location not specified"}
+            {opts.showLocation && (
+              <div className="flex items-center text-sm">
+                <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                <div className="ml-0">
+                  {event.location || "Location not specified"}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {opts.showDescription && event.description && (
-            <div className="text-sm">
-              <div className={descriptionClamp} title={event.description}>
-                {event.description}
+            {opts.showPriceDetails && (
+              <div className="flex justify-between text-sm">
+                <div className="font-medium">
+                  {hasTicketPrice ? `£${event.price.toFixed(2)}` : "Free"}
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {showTicketsRemaining && (
+                    <div className="flex items-center">
+                      <Ticket className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                      <span className={cn(isSoldOut && "text-red-500")}>
+                        {isSoldOut
+                          ? "Sold out"
+                          : `${event.tickets_remaining} left`}
+                      </span>
+                    </div>
+                  )}
+
+                  {event.max_attendees !== undefined && (
+                    <div className="flex items-center">
+                      <Users className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                      {event.max_attendees} attendees
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        </CardContent>
+      </div>
 
-          {opts.showPriceDetails && (
-            <div className="flex justify-between text-sm">
-              <div className="font-medium">
-                {hasTicketPrice ? `£${event.price.toFixed(2)}` : "Free"}
-              </div>
-
-              <div className="flex items-center space-x-3">
-                {showTicketsRemaining && (
-                  <div className="flex items-center">
-                    <Ticket className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                    <span className={cn(isSoldOut && "text-red-500")}>
-                      {isSoldOut
-                        ? "Sold out"
-                        : `${event.tickets_remaining} left`}
-                    </span>
-                  </div>
-                )}
-
-                {event.max_attendees !== undefined && (
-                  <div className="flex items-center">
-                    <Users className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                    {event.max_attendees} attendees
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {opts.showCreatorInfo && (
-            <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
-              {event.team_name && (
-                <div className="mb-1">Organised by {event.team_name}</div>
-              )}
-              {event.creator_username && (
-                <div>Created by {event.creator_username}</div>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
       {opts.showActionButtons && (
-        <CardFooter className="p-4 pt-0 mt-auto">
+        <CardFooter className="p-4 mt-auto">
           <div className="w-full">
             {registrationError && (
               <Alert variant="destructive" className="mb-3">
