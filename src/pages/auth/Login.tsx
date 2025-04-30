@@ -47,12 +47,12 @@ const Login = () => {
   const displayError = formError || authError;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center h-[calc(100vh-300px)] bg-background">
+      <Card className="w-full max-w-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
           <CardDescription>
-            Enter your credentials to access your account
+            Welcome back! Please enter your credentials to access your account.
           </CardDescription>
         </CardHeader>
 
@@ -90,8 +90,12 @@ const Login = () => {
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col space-y-2">
-            <Button type="submit" className="w-full" disabled={loading}>
+          <CardFooter className="flex flex-col space-y-2 mt-4">
+            <Button
+              type="submit"
+              className="w-fit cursor-pointer disabled:cursor-not-allowed"
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in
