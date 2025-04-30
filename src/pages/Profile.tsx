@@ -38,8 +38,9 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (user) {
+      if (user?.id) {
         try {
+          // Fetch the latest user data directly from the API
           const response = await usersApi.getUserById(String(user.id));
           const fetchedUser = response.data.user;
           setUserData(fetchedUser);
@@ -49,16 +50,34 @@ export default function Profile() {
           setTeams(userTeams);
           setIsTeamMember(userTeams.length > 0);
 
+          // Update form fields with the latest data
           setUsername(fetchedUser.username || "");
           setEmail(fetchedUser.email || "");
           setProfileImageUrl(fetchedUser.profile_image_url || "");
         } catch (error) {
           console.error("Failed to fetch user data:", error);
+          toast.error("Error loading profile", {
+            description: "There was a problem loading your profile data.",
+          });
+
+          // Fallback to context data if API call fails
+          if (user) {
+            setUserData(user);
+            setUsername(user.username || "");
+            setEmail(user.email || "");
+            setProfileImageUrl(user.profile_image_url || "");
+
+            // Set teams from context user data as fallback
+            const userTeams = user.teams || [];
+            setTeams(userTeams);
+            setIsTeamMember(userTeams.length > 0);
+          }
         }
       }
     };
+
     fetchData();
-  }, [user]);
+  }, [user?.id]); // Only re-fetch when user ID changes
 
   const handleEditProfile = () => {
     setIsEditing(true);
@@ -75,7 +94,7 @@ export default function Profile() {
   };
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user?.id) return;
 
     setIsLoading(true);
     try {
@@ -86,12 +105,14 @@ export default function Profile() {
       });
 
       // Update local user data
-      setUserData({
+      const updatedUserData = {
         ...userData,
         username,
         email,
         profile_image_url: profileImageUrl,
-      });
+      };
+
+      setUserData(updatedUserData);
 
       // Update user data in context to reflect changes across components
       updateUserData({
@@ -104,6 +125,10 @@ export default function Profile() {
       toast("Profile updated", {
         description: "Your profile information has been updated successfully.",
       });
+
+      // Refresh user data from API to ensure we have the latest data
+      const response = await usersApi.getUserById(String(user.id));
+      setUserData(response.data.user);
     } catch (error) {
       console.error("Failed to update profile:", error);
       toast.error("Update failed", {
