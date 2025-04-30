@@ -18,7 +18,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Event } from "@/types/events";
 import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
-import { PencilIcon, Users, Calendar, MapPin, ImageIcon } from "lucide-react";
+import {
+  PencilIcon,
+  Users,
+  Calendar,
+  MapPin,
+  ImageIcon,
+  Ticket,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Define a simplified user interface for auth context
@@ -58,9 +65,24 @@ export function EventCard({
     useState<boolean>(true);
   const [hasPaidTicket, setHasPaidTicket] = useState<boolean>(false);
   const [imageError, setImageError] = useState<boolean>(false);
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [checkingPermissions, setCheckingPermissions] = useState<boolean>(true);
 
   // Define a key for local storage to store ticket status
   const ticketCacheKey = userId ? `ticket_paid_${userId}_${event.id}` : null;
+
+  const formattedStartDate = format(new Date(event.start_time), "MMM d, yyyy");
+  const formattedStartTime = format(new Date(event.start_time), "h:mm a");
+  const formattedEndTime = format(new Date(event.end_time), "h:mm a");
+
+  const isPublished = event.status === "published";
+  const hasTicketPrice =
+    event.price !== null && event.price !== undefined && event.price > 0;
+  const showTicketsRemaining =
+    event.tickets_remaining !== null && event.tickets_remaining !== undefined;
+  const isSoldOut = showTicketsRemaining && event.tickets_remaining === 0;
+
+  console.log(event);
 
   // Check if ticket was just purchased
   useEffect(() => {
@@ -140,11 +162,7 @@ export function EventCard({
 
       try {
         // Check if user has a paid ticket for this event
-        if (
-          event.price !== undefined &&
-          event.price !== null &&
-          event.price > 0
-        ) {
+        if (hasTicketPrice) {
           try {
             const hasPaid = await ticketsApi.hasUserPaidForEvent(
               userId.toString(),
@@ -198,17 +216,7 @@ export function EventCard({
     };
 
     checkRegistrationStatus();
-  }, [event.id, userId, event.price, ticketCacheKey]);
-
-  // Permission states
-  const [canEdit, setCanEdit] = useState<boolean>(false);
-  const [checkingPermissions, setCheckingPermissions] = useState<boolean>(true);
-
-  const formattedStartDate = format(new Date(event.start_time), "MMM d, yyyy");
-  const formattedStartTime = format(new Date(event.start_time), "h:mm a");
-  const formattedEndTime = format(new Date(event.end_time), "h:mm a");
-
-  const isPublished = event.status === "published";
+  }, [event.id, userId, hasTicketPrice, ticketCacheKey]);
 
   // Check user permissions via API call
   useEffect(() => {
@@ -216,6 +224,25 @@ export function EventCard({
       if (!userId) {
         setCheckingPermissions(false);
         return;
+      }
+
+      // Check cache first
+      const permissionCacheKey = `edit_permission_${userId}_${event.id}`;
+      const cachedPermission = localStorage.getItem(permissionCacheKey);
+      const cacheTimestampKey = `edit_permission_timestamp_${userId}_${event.id}`;
+      const cachedTimestamp = localStorage.getItem(cacheTimestampKey);
+      const cacheExpiry = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+      // Use cache if valid and not expired
+      if (cachedPermission !== null && cachedTimestamp) {
+        const timestamp = parseInt(cachedTimestamp, 10);
+        const now = Date.now();
+
+        if (now - timestamp < cacheExpiry) {
+          setCanEdit(cachedPermission === "true");
+          setCheckingPermissions(false);
+          return;
+        }
       }
 
       try {
@@ -228,6 +255,8 @@ export function EventCard({
           user?.username === event.creator_username
         ) {
           setCanEdit(true);
+          localStorage.setItem(permissionCacheKey, "true");
+          localStorage.setItem(cacheTimestampKey, Date.now().toString());
           setCheckingPermissions(false);
           return;
         }
@@ -239,32 +268,39 @@ export function EventCard({
         // If user is site admin, they can edit
         if (userData.is_site_admin) {
           setCanEdit(true);
+          localStorage.setItem(permissionCacheKey, "true");
+          localStorage.setItem(cacheTimestampKey, Date.now().toString());
           setCheckingPermissions(false);
           return;
         }
 
-        // Check team membership role
-        try {
-          // This gets all team memberships for a user
-          const membershipResponse = await teamsApi.getMemberByUserId(
-            userId.toString()
-          );
-          const memberships = membershipResponse.data.team_members || [];
-
-          // Check if the user has edit permission in the event's team
-          const hasEditPermission = memberships.some(
-            (membership: any) =>
-              membership.team_id === event.team_id &&
-              ["team_admin", "owner", "organizer", "event_manager"].includes(
-                membership.role
-              )
-          );
-
-          setCanEdit(hasEditPermission);
-        } catch (error) {
-          console.error("Failed to check team membership:", error);
+        // Only check team membership if user has teams
+        if (userData.has_teams === false) {
           setCanEdit(false);
+          localStorage.setItem(permissionCacheKey, "false");
+          localStorage.setItem(cacheTimestampKey, Date.now().toString());
+          setCheckingPermissions(false);
+          return;
         }
+
+        // Check team membership role - the API now handles 404 gracefully
+        const membershipResponse = await teamsApi.getMemberByUserId(
+          userId.toString()
+        );
+        const memberships = membershipResponse.data.team_members || [];
+
+        // Check if the user has edit permission in the event's team
+        const hasEditPermission = memberships.some(
+          (membership: any) =>
+            membership.team_id === event.team_id &&
+            ["team_admin", "owner", "organizer", "event_manager"].includes(
+              membership.role
+            )
+        );
+
+        setCanEdit(hasEditPermission);
+        localStorage.setItem(permissionCacheKey, hasEditPermission.toString());
+        localStorage.setItem(cacheTimestampKey, Date.now().toString());
       } catch (error) {
         console.error("Failed to check user permissions:", error);
         setCanEdit(false);
@@ -280,11 +316,10 @@ export function EventCard({
     userId,
     event.creator_username,
     user?.username,
-    event.title,
   ]);
 
   const handleRegister = async () => {
-    if (!isPublished || !userId || isAlreadyRegistered) return;
+    if (!isPublished || !userId || isAlreadyRegistered || isSoldOut) return;
 
     setIsRegistering(true);
     setRegistrationError(null);
@@ -292,6 +327,7 @@ export function EventCard({
     try {
       await eventsApi.registerForEvent(event.id.toString(), userId);
       setRegistrationSuccess(true);
+      setIsAlreadyRegistered(true);
     } catch (error: any) {
       console.error("Registration failed:", error);
 
@@ -404,19 +440,26 @@ export function EventCard({
 
           <div className="flex justify-between text-sm">
             <div className="font-medium">
-              {event.price !== null &&
-              event.price !== undefined &&
-              event.price > 0
-                ? `$${event.price.toFixed(2)}`
-                : "Free"}
+              {hasTicketPrice ? `£${event.price.toFixed(2)}` : "Free"}
             </div>
 
-            {event.max_attendees !== undefined && (
-              <div className="flex items-center">
-                <Users className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                {event.max_attendees} attendees
-              </div>
-            )}
+            <div className="flex items-center space-x-3">
+              {showTicketsRemaining && (
+                <div className="flex items-center">
+                  <Ticket className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                  <span className={cn(isSoldOut && "text-red-500")}>
+                    {isSoldOut ? "Sold out" : `${event.tickets_remaining} left`}
+                  </span>
+                </div>
+              )}
+
+              {event.max_attendees !== undefined && (
+                <div className="flex items-center">
+                  <Users className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                  {event.max_attendees} attendees
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
@@ -452,9 +495,14 @@ export function EventCard({
                   <Button disabled className="flex-1">
                     Checking...
                   </Button>
-                ) : event.price !== null &&
-                  event.price !== undefined &&
-                  event.price > 0 ? (
+                ) : isSoldOut && !hasPaidTicket ? (
+                  <Button
+                    disabled
+                    className="flex-1 bg-red-500 hover:bg-red-500"
+                  >
+                    Sold Out
+                  </Button>
+                ) : hasTicketPrice ? (
                   <StripeTicketCheckout
                     event={event}
                     buttonText={

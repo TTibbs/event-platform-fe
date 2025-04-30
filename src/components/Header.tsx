@@ -36,24 +36,84 @@ const Header = () => {
       // Check for site admin status
       await checkSiteAdmin();
 
-      // Check team membership
+      // First check local storage for team membership cache
+      const teamMembershipKey = `team_membership_${user.id}`;
+      const cachedTeamMembership = localStorage.getItem(teamMembershipKey);
+      const cacheTimestampKey = `team_membership_timestamp_${user.id}`;
+      const cachedTimestamp = localStorage.getItem(cacheTimestampKey);
+      const cacheExpiry = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+      // Check if we have a valid cached value
+      if (cachedTeamMembership !== null && cachedTimestamp) {
+        const timestamp = parseInt(cachedTimestamp, 10);
+        const now = Date.now();
+
+        // Use cache if it's not expired
+        if (now - timestamp < cacheExpiry) {
+          setIsTeamMember(cachedTeamMembership === "true");
+
+          // If the user has been cached as not a team member, skip API call
+          if (cachedTeamMembership === "false") {
+            console.log(
+              "Using cached team membership status: not a team member"
+            );
+
+            // Fetch latest user data to ensure profile image is up-to-date
+            try {
+              const userResponse = await usersApi.getUserById(
+                user.id.toString()
+              );
+              setCurrentUserData(userResponse.data.user);
+            } catch (err) {
+              console.error("Error fetching user data:", err);
+              setCurrentUserData(user);
+            }
+
+            return;
+          }
+        }
+      }
+
+      // Check user data first for any team membership flag
+      try {
+        const userResponse = await usersApi.getUserById(user.id.toString());
+        setCurrentUserData(userResponse.data.user);
+
+        // If user data indicates they don't have teams, skip team membership check
+        if (userResponse.data.user.has_teams === false) {
+          setIsTeamMember(false);
+          // Cache the result
+          localStorage.setItem(teamMembershipKey, "false");
+          localStorage.setItem(cacheTimestampKey, Date.now().toString());
+          return;
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        setCurrentUserData(user);
+      }
+
+      // Check team membership only if needed
       try {
         const teamResponse = await teamsApi.getMemberByUserId(
           user.id.toString()
         );
-        setIsTeamMember(!!teamResponse.data);
-      } catch (err) {
-        console.error("Error checking team membership:", err);
-        setIsTeamMember(false);
-      }
+        const hasTeamMembership = !!teamResponse.data.team_members?.length;
+        setIsTeamMember(hasTeamMembership);
 
-      // Fetch latest user data to ensure profile image is up-to-date
-      try {
-        const userResponse = await usersApi.getUserById(user.id.toString());
-        setCurrentUserData(userResponse.data.user);
-      } catch (err) {
-        console.error("Error fetching user data:", err);
-        setCurrentUserData(user);
+        // Cache the result
+        localStorage.setItem(teamMembershipKey, hasTeamMembership.toString());
+        localStorage.setItem(cacheTimestampKey, Date.now().toString());
+      } catch (err: any) {
+        // If we get a 404, it means user is not a team member
+        if (err.response?.status === 404) {
+          setIsTeamMember(false);
+          // Cache the negative result
+          localStorage.setItem(teamMembershipKey, "false");
+          localStorage.setItem(cacheTimestampKey, Date.now().toString());
+        } else {
+          console.error("Error checking team membership:", err);
+          setIsTeamMember(false);
+        }
       }
     };
 
@@ -70,6 +130,11 @@ const Header = () => {
 
   // Handle logout
   const handleLogout = async () => {
+    // Clear team membership cache on logout
+    if (user?.id) {
+      localStorage.removeItem(`team_membership_${user.id}`);
+      localStorage.removeItem(`team_membership_timestamp_${user.id}`);
+    }
     await logout();
   };
 

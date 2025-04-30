@@ -9,6 +9,7 @@ export interface Event {
   end_time: string;
   price: number;
   max_attendees: number;
+  tickets_remaining: number;
   status: "draft" | "published" | "cancelled" | string;
   category: string;
   creator_username: string;

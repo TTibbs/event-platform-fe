@@ -30,8 +30,26 @@ const teamsApi = {
     return axiosClient.get(`/teams/members/${userId}/role`);
   },
 
-  getMemberByUserId: (userId: string) => {
-    return axiosClient.get(`/teams/members/user/${userId}`);
+  getMemberByUserId: async (userId: string) => {
+    try {
+      return await axiosClient.get(`/teams/members/user/${userId}`);
+    } catch (error: any) {
+      // If the error is a 404 (user has no teams), return an empty result instead of throwing
+      if (error.response?.status === 404) {
+        return {
+          data: {
+            team_members: [],
+            message: "User is not a member of any teams",
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        };
+      }
+      // Re-throw other errors
+      throw error;
+    }
   },
 
   createTeam: (params: CreateTeamParams) => {
