@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { TeamResponse, TeamMember } from "@/types/teams";
-import { Plus, Pencil, Trash2, Users, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  RefreshCw,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,6 +109,11 @@ export default function TeamsManagement({
 
   // Add a state to track loading status of member counts
   const [loadingCounts, setLoadingCounts] = useState<boolean>(false);
+
+  // Add sorting state
+  type SortKey = "id" | "name" | "description" | "members" | "created_at";
+  const [sortColumn, setSortColumn] = useState<SortKey>("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -427,6 +441,81 @@ export default function TeamsManagement({
     fetchTeamMemberCounts();
   };
 
+  // Add sort function
+  const sortTeams = (
+    teams: TeamResponse[],
+    column: SortKey,
+    direction: "asc" | "desc"
+  ) => {
+    return [...teams].sort((a, b) => {
+      // Define how to compare for each column type
+      let comparison: number;
+      switch (column) {
+        case "id":
+          comparison = a.id - b.id;
+          break;
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "description":
+          // Handle null/undefined descriptions
+          const descA = a.description || "";
+          const descB = b.description || "";
+          comparison = descA.localeCompare(descB);
+          break;
+        case "members":
+          // Compare by member count
+          const countA =
+            teamMemberCounts[a.id] !== undefined
+              ? teamMemberCounts[a.id]
+              : teamMembers.filter((m) => m.team_id === a.id).length;
+          const countB =
+            teamMemberCounts[b.id] !== undefined
+              ? teamMemberCounts[b.id]
+              : teamMembers.filter((m) => m.team_id === b.id).length;
+          comparison = countA - countB;
+          break;
+        case "created_at":
+          comparison =
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return direction === "asc" ? comparison : -comparison;
+    });
+  };
+
+  // Add sort handler
+  const handleSort = (column: SortKey) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Default to descending for new column
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+  };
+
+  // Apply sorting to teams whenever sort parameters change
+  useEffect(() => {
+    setTeams(sortTeams(initialTeams, sortColumn, sortDirection));
+  }, [initialTeams, sortColumn, sortDirection, teamMemberCounts]);
+
+  // Add a helper function to display sort direction indicators
+  const getSortIcon = (column: SortKey) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="ml-1 h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
+
   if (loading && teams.length === 0) {
     return (
       <div className="space-y-4">
@@ -458,17 +547,47 @@ export default function TeamsManagement({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("id")}
+                  >
+                    <div className="flex items-center">
+                      ID {getSortIcon("id")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("name")}
+                  >
+                    <div className="flex items-center">
+                      Name {getSortIcon("name")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("description")}
+                  >
+                    <div className="flex items-center">
+                      Description {getSortIcon("description")}
+                    </div>
+                  </TableHead>
                   <TableHead>
-                    <div className="flex items-center space-x-1">
-                      <span>Members</span>
+                    <div className="flex items-center">
+                      <div
+                        className="cursor-pointer flex-1 flex"
+                        onClick={() => handleSort("members")}
+                      >
+                        <span>Members</span>
+                        {getSortIcon("members")}
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-6 text-muted-foreground hover:text-primary"
-                        onClick={handleRefreshCounts}
+                        className="size-6 text-muted-foreground hover:text-primary ml-1"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering sort
+                          handleRefreshCounts();
+                        }}
                         disabled={loadingCounts}
                         title="Refresh member counts"
                       >
@@ -476,7 +595,14 @@ export default function TeamsManagement({
                       </Button>
                     </div>
                   </TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("created_at")}
+                  >
+                    <div className="flex items-center">
+                      Created {getSortIcon("created_at")}
+                    </div>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>

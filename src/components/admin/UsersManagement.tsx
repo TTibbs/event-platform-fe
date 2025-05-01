@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { User, UpdateUserParams, PromoteToAdminParams } from "@/types/users";
-import { UserPlus, EyeIcon, Pencil, Trash2 } from "lucide-react";
+import {
+  UserPlus,
+  EyeIcon,
+  Pencil,
+  Trash2,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,6 +80,11 @@ export default function UsersManagement({
     email?: string;
     password?: string;
   }>({});
+
+  // Add sorting state
+  type SortKey = "id" | "username" | "email" | "is_site_admin" | "created_at";
+  const [sortColumn, setSortColumn] = useState<SortKey>("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Fetch the total count from the admin dashboard if not provided
   useEffect(() => {
@@ -368,6 +381,69 @@ export default function UsersManagement({
     }
   };
 
+  // Add sort function
+  const sortUsers = (
+    users: User[],
+    column: SortKey,
+    direction: "asc" | "desc"
+  ) => {
+    return [...users].sort((a, b) => {
+      // Define how to compare for each column type
+      let comparison: number;
+      switch (column) {
+        case "id":
+          comparison = a.id - b.id;
+          break;
+        case "username":
+          comparison = a.username.localeCompare(b.username);
+          break;
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case "is_site_admin":
+          comparison = (a.is_site_admin ? 1 : 0) - (b.is_site_admin ? 1 : 0);
+          break;
+        case "created_at":
+          comparison =
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return direction === "asc" ? comparison : -comparison;
+    });
+  };
+
+  // Add sort handler
+  const handleSort = (column: SortKey) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Default to descending for new column
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+  };
+
+  // Apply sorting to users whenever sort parameters change
+  useEffect(() => {
+    setUsers(sortUsers(initialUsers, sortColumn, sortDirection));
+  }, [initialUsers, sortColumn, sortDirection]);
+
+  // Add a helper function to display sort direction indicators
+  const getSortIcon = (column: SortKey) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="ml-1 h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
+
   return (
     <>
       <ManagementBase
@@ -384,11 +460,46 @@ export default function UsersManagement({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("id")}
+                  >
+                    <div className="flex items-center">
+                      ID {getSortIcon("id")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("username")}
+                  >
+                    <div className="flex items-center">
+                      Username {getSortIcon("username")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("email")}
+                  >
+                    <div className="flex items-center">
+                      Email {getSortIcon("email")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("is_site_admin")}
+                  >
+                    <div className="flex items-center">
+                      Role {getSortIcon("is_site_admin")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("created_at")}
+                  >
+                    <div className="flex items-center">
+                      Created {getSortIcon("created_at")}
+                    </div>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
