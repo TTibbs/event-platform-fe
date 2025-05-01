@@ -301,16 +301,7 @@ export default function AdminDashboard() {
             </SidebarFooter>
           </Sidebar>
 
-          <div className="flex-1 p-6 overflow-auto">
-            <div className="pb-4 mb-6 border-b">
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-muted-foreground">
-                Site administration and management
-              </p>
-            </div>
-
-            {renderContent()}
-          </div>
+          <div className="flex-1 p-6 overflow-auto">{renderContent()}</div>
         </div>
       </SidebarProvider>
     </div>
