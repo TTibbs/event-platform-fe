@@ -15,6 +15,7 @@ import EventDetails from "@/pages/events/EventDetails";
 import AdminDashboard from "@/pages/AdminDashboard";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
 import NotFound from "./pages/NotFound";
+import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
               </Routes>
             </Layout>
             <Toaster />
+            <Analytics />
           </div>
         </ThemeProvider>
       </AuthProvider>
