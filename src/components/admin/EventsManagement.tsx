@@ -54,12 +54,7 @@ import teamsApi from "@/api/teams";
 import usersApi from "@/api/users";
 import { toast } from "sonner";
 import ManagementBase from "./ManagementBase";
-
-interface EventsManagementProps {
-  events: Event[];
-  totalEvents?: number;
-  draftEventsCount?: number;
-}
+import { EventsManagementProps } from "@/types/admin";
 
 export default function EventsManagement({
   events: initialEvents,

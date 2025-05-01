@@ -1,5 +1,3 @@
-// Event type definitions
-
 export interface Event {
   id: number;
   title: string;
@@ -98,4 +96,11 @@ export interface CardItem {
 export interface Category {
   id: number;
   name: string;
+}
+
+export interface StripeTicketCheckoutProps {
+  event: EventDetail;
+  buttonText?: string;
+  className?: string;
+  disabled?: boolean;
 }

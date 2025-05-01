@@ -23,7 +23,6 @@ export interface EventCardOptions {
   imageHeight?: string;
   titleLines?: number;
   descriptionLines?: number;
-  titleOverlay?: boolean;
 }
 
 export interface EventProps {
@@ -32,4 +31,9 @@ export interface EventProps {
   className?: string;
   variant?: EventCardVariant;
   options?: EventCardOptions;
+}
+
+export interface EventFormProps {
+  event?: Event;
+  isEditing?: boolean;
 }

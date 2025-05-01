@@ -24,7 +24,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import eventsApi from "@/api/events";
-import { Category, Event } from "@/types/events";
+import { Category } from "@/types/events";
+import { EventFormProps } from "@/types/eventCard";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -41,11 +42,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-interface EventFormProps {
-  event?: Event;
-  isEditing?: boolean;
-}
 
 export default function EventForm({
   event,

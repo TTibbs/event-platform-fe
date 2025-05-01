@@ -19,22 +19,7 @@ import {
   useEventTicketStatus,
   useRegisterForEvent,
 } from "@/hooks/useEventQueries";
-import { EventProps } from "@/types/eventCard";
-
-export interface EventCardOptions {
-  showImage?: boolean;
-  showCategory?: boolean;
-  showLocation?: boolean;
-  showDescription?: boolean;
-  showTimeDetails?: boolean;
-  showPriceDetails?: boolean;
-  showCreatorInfo?: boolean;
-  showActionButtons?: boolean;
-  fixedHeight?: boolean;
-  imageHeight?: string;
-  titleLines?: number;
-  descriptionLines?: number;
-}
+import { EventCardOptions, EventProps } from "@/types/eventCard";
 
 const defaultOptions: EventCardOptions = {
   showImage: true,

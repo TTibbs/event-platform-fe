@@ -44,11 +44,7 @@ import usersApi from "@/api/users";
 import authApi from "@/api/auth";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface UsersManagementProps {
-  users: User[];
-  totalUsers?: number;
-}
+import { UsersManagementProps } from "@/types/admin";
 
 export default function UsersManagement({
   users: initialUsers,

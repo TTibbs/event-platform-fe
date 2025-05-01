@@ -1,18 +1,6 @@
-import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface ManagementBaseProps {
-  title: string;
-  description: string;
-  addButtonLabel: string;
-  addButtonIcon: ReactNode;
-  onAddButtonClick?: () => void;
-  loading: boolean;
-  error: string | null;
-  children: ReactNode;
-}
-
+import { ManagementBaseProps } from "@/types/admin";
 export default function ManagementBase({
   title,
   description,

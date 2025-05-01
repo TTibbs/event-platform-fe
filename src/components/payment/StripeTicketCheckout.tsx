@@ -4,14 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { stripeApi, ticketsApi } from "@/api";
-import { EventDetail } from "@/types/events";
-
-interface StripeTicketCheckoutProps {
-  event: EventDetail;
-  buttonText?: string;
-  className?: string;
-  disabled?: boolean;
-}
+import { StripeTicketCheckoutProps } from "@/types/events";
 
 export default function StripeTicketCheckout({
   event,

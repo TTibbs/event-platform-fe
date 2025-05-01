@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TeamResponse, TeamMember } from "@/types/teams";
+import { TeamResponse } from "@/types/teams";
 import {
   Plus,
   Pencil,
@@ -54,18 +54,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
-
-interface TeamsManagementProps {
-  teams: TeamResponse[];
-  teamMembers: TeamMember[];
-  totalTeams?: number;
-  totalTeamMembers?: number;
-}
-
-interface TeamParams {
-  name: string;
-  description?: string;
-}
+import { TeamsManagementProps, TeamParams } from "@/types/admin";
 
 export default function TeamsManagement({
   teams: initialTeams,

@@ -8,27 +8,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import authApi from "@/api/auth";
 import usersApi from "@/api/users";
-
-// Define the team interface
-interface Team {
-  team_id: number;
-  team_name: string;
-  team_description: string;
-  role: string;
-}
-
-// Define the shape of the user data
-interface User {
-  id?: number;
-  username?: string;
-  email?: string;
-  profile_image_url?: string;
-  created_at?: string;
-  updated_at?: string;
-  teams?: Team[];
-  is_site_admin?: boolean;
-  [key: string]: any;
-}
+import { User } from "@/types/users";
 
 // Define the shape of the context
 interface AuthContextType {

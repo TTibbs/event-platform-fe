@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import usersApi from "@/api/users";
-import { User } from "@/types/users";
-import { TeamResponse, TeamMember } from "@/types/teams";
-import { Event } from "@/types/events";
 import {
   Sidebar,
   SidebarContent,
@@ -34,29 +31,13 @@ import {
   TeamsManagement,
   EventsManagement,
 } from "@/components/admin";
+import {
+  AdminDashboardData,
+  ExtractedTeamMember,
+  StatsType,
+} from "@/types/admin";
 
 // Define types
-interface AdminDashboardData {
-  users: User[];
-  teams: TeamResponse[];
-  teamMembers: TeamMember[];
-  events: Event[];
-}
-
-interface ExtractedTeamMember {
-  userId: number;
-  teamId: number;
-  username: string;
-  email: string;
-  role: string;
-}
-
-interface StatsType {
-  users: number;
-  teams: number;
-  events: number;
-  teamMembers: number;
-}
 
 interface SidebarItemType {
   id: string;
