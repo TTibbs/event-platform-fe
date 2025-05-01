@@ -227,11 +227,6 @@ export default function Dashboard() {
           />
 
           <div className="flex-1 p-6 overflow-auto">
-            <div className="pb-4 mb-6 border-b">
-              <h1 className="text-2xl font-bold">Team Dashboard</h1>
-              <p className="text-muted-foreground">Manage your team's events</p>
-            </div>
-
             {/* Display based on active section */}
             {activeSection === "team-members" ? (
               renderTeamMembers()
