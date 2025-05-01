@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { Event, CreateEventParams } from "@/types/events";
-import { Calendar, EyeIcon, Pencil, Trash2 } from "lucide-react";
+import {
+  Calendar,
+  EyeIcon,
+  Pencil,
+  Trash2,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,6 +99,17 @@ export default function EventsManagement({
 
   const [newEvent, setNewEvent] =
     useState<CreateEventParams>(defaultEventState);
+
+  // Add sorting state
+  type SortKey =
+    | "id"
+    | "title"
+    | "team_name"
+    | "start_time"
+    | "status"
+    | "creator_username";
+  const [sortColumn, setSortColumn] = useState<SortKey>("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Fetch teams for the dropdown
   const fetchTeams = async () => {
@@ -324,6 +343,74 @@ export default function EventsManagement({
     navigate(`/events/${event.id}`);
   };
 
+  // Add sort function
+  const sortEvents = (
+    events: Event[],
+    column: SortKey,
+    direction: "asc" | "desc"
+  ) => {
+    return [...events].sort((a, b) => {
+      // Define how to compare for each column type
+      let comparison: number;
+      switch (column) {
+        case "id":
+          comparison = a.id - b.id;
+          break;
+        case "title":
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case "team_name":
+          comparison = (a.team_name || "").localeCompare(b.team_name || "");
+          break;
+        case "start_time":
+          comparison =
+            new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+          break;
+        case "status":
+          comparison = a.status.localeCompare(b.status);
+          break;
+        case "creator_username":
+          comparison = (a.creator_username || "").localeCompare(
+            b.creator_username || ""
+          );
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return direction === "asc" ? comparison : -comparison;
+    });
+  };
+
+  // Add sort handler
+  const handleSort = (column: SortKey) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Default to descending for new column
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+  };
+
+  // Apply sorting to events whenever sort parameters change
+  useEffect(() => {
+    setEvents(sortEvents(initialEvents, sortColumn, sortDirection));
+  }, [initialEvents, sortColumn, sortDirection]);
+
+  // Add a helper function to display sort direction indicators
+  const getSortIcon = (column: SortKey) => {
+    if (sortColumn !== column) {
+      return <ChevronsUpDown className="ml-1 h-4 w-4" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
+
   return (
     <>
       <ManagementBase
@@ -340,12 +427,54 @@ export default function EventsManagement({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created By</TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("id")}
+                  >
+                    <div className="flex items-center">
+                      ID {getSortIcon("id")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("title")}
+                  >
+                    <div className="flex items-center">
+                      Title {getSortIcon("title")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("team_name")}
+                  >
+                    <div className="flex items-center">
+                      Team {getSortIcon("team_name")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("start_time")}
+                  >
+                    <div className="flex items-center">
+                      Date {getSortIcon("start_time")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center">
+                      Status {getSortIcon("status")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer"
+                    onClick={() => handleSort("creator_username")}
+                  >
+                    <div className="flex items-center">
+                      Created By {getSortIcon("creator_username")}
+                    </div>
+                  </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -358,7 +487,7 @@ export default function EventsManagement({
                   </TableRow>
                 ) : (
                   events.map((event) => (
-                    <TableRow key={event.id}>
+                    <TableRow key={event.id} className="hover:bg-zinc-700">
                       <TableCell>{event.id}</TableCell>
                       <TableCell className="font-medium">
                         {event.title}

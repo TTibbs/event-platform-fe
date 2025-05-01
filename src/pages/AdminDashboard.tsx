@@ -35,6 +35,7 @@ import {
   EventsManagement,
 } from "@/components/admin";
 
+// Define types
 interface AdminDashboardData {
   users: User[];
   teams: TeamResponse[];
@@ -57,6 +58,13 @@ interface StatsType {
   teamMembers: number;
 }
 
+interface SidebarItemType {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+// Main AdminDashboard component
 export default function AdminDashboard() {
   const {
     isSiteAdmin,
@@ -65,7 +73,49 @@ export default function AdminDashboard() {
     loading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string>("overview");
+
+  // Define available dashboard sections
+  const DASHBOARD_SECTIONS = {
+    OVERVIEW: "overview",
+    USERS: "users",
+    TEAMS: "teams",
+    EVENTS: "events",
+    SETTINGS: "settings",
+  };
+
+  // Define sidebar menu items
+  const sidebarItems: SidebarItemType[] = [
+    {
+      id: DASHBOARD_SECTIONS.OVERVIEW,
+      label: "Overview",
+      icon: <HomeIcon className="mr-2" />,
+    },
+    {
+      id: DASHBOARD_SECTIONS.USERS,
+      label: "Users",
+      icon: <UsersIcon className="mr-2" />,
+    },
+    {
+      id: DASHBOARD_SECTIONS.TEAMS,
+      label: "Teams",
+      icon: <UserCogIcon className="mr-2" />,
+    },
+    {
+      id: DASHBOARD_SECTIONS.EVENTS,
+      label: "Events",
+      icon: <CalendarIcon className="mr-2" />,
+    },
+    {
+      id: DASHBOARD_SECTIONS.SETTINGS,
+      label: "Settings",
+      icon: <Settings2Icon className="mr-2" />,
+    },
+  ];
+
+  // State
+  const [activeSection, setActiveSection] = useState<string>(
+    DASHBOARD_SECTIONS.OVERVIEW
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [dashboardData, setDashboardData] = useState<AdminDashboardData>({
     users: [],
@@ -80,6 +130,7 @@ export default function AdminDashboard() {
     teamMembers: 0,
   });
 
+  // Verify admin access
   useEffect(() => {
     const verifyAccess = async () => {
       setLoading(true);
@@ -108,21 +159,33 @@ export default function AdminDashboard() {
     verifyAccess();
   }, [isAuthenticated, isSiteAdmin, navigate, checkSiteAdmin, authLoading]);
 
-  // Load dashboard data from consolidated API endpoint
+  // Load dashboard data
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         if (!loading && isSiteAdmin) {
           const response = await usersApi.getAdminDashboardData();
-
-          // The actual data is nested under response.data.data
           const data = response.data?.data || {};
 
-          // Combine regular and draft events
-          const allEvents = [
-            ...(Array.isArray(data.events) ? data.events : []),
-            ...(Array.isArray(data.draft_events) ? data.draft_events : []),
-          ];
+          // Process events - combine regular and draft events without duplicates
+          const eventsMap = new Map();
+
+          // Add regular events to map with id as key
+          if (Array.isArray(data.events)) {
+            data.events.forEach((event: any) => {
+              eventsMap.set(event.id, event);
+            });
+          }
+
+          // Add draft events to map, will override if same id exists
+          if (Array.isArray(data.draft_events)) {
+            data.draft_events.forEach((event: any) => {
+              eventsMap.set(event.id, event);
+            });
+          }
+
+          // Convert map values to array
+          const allEvents = Array.from(eventsMap.values());
 
           // Extract team membership data from users
           const extractedTeamMembers: ExtractedTeamMember[] = [];
@@ -142,13 +205,15 @@ export default function AdminDashboard() {
             });
           }
 
+          // Update dashboard data
           setDashboardData({
             users: Array.isArray(data.users) ? data.users : [],
             teams: Array.isArray(data.teams) ? data.teams : [],
-            teamMembers: extractedTeamMembers as any, // Cast to match expected type
+            teamMembers: extractedTeamMembers as any,
             events: allEvents,
           });
 
+          // Update stats
           setStats({
             users: data.total_users || 0,
             teams: data.total_teams || 0,
@@ -164,6 +229,7 @@ export default function AdminDashboard() {
     loadDashboardData();
   }, [loading, isSiteAdmin]);
 
+  // Show loading state
   if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -172,10 +238,12 @@ export default function AdminDashboard() {
     );
   }
 
+  // Don't render if not admin
   if (!isSiteAdmin) {
-    return null; // Don't render anything if not admin
+    return null;
   }
 
+  // Render active section content
   const renderContent = () => {
     // Count published and draft events separately for the events management section
     const publishedEvents = dashboardData.events.filter(
@@ -185,33 +253,39 @@ export default function AdminDashboard() {
       (event) => event.status === "draft"
     );
 
-    // Map each section to its component with appropriate props
-    const sections = {
-      overview: <AdminOverview stats={stats} />,
-      users: (
-        <UsersManagement users={dashboardData.users} totalUsers={stats.users} />
-      ),
-      teams: (
-        <TeamsManagement
-          teams={dashboardData.teams}
-          teamMembers={dashboardData.teamMembers}
-          totalTeams={stats.teams}
-          totalTeamMembers={stats.teamMembers}
-        />
-      ),
-      events: (
-        <EventsManagement
-          events={dashboardData.events}
-          totalEvents={publishedEvents.length}
-          draftEventsCount={draftEvents.length}
-        />
-      ),
-      settings: <AdminSettings />,
-    };
-
-    return (
-      sections[activeSection as keyof typeof sections] || sections.overview
-    );
+    // Select the appropriate component based on active section
+    switch (activeSection) {
+      case DASHBOARD_SECTIONS.OVERVIEW:
+        return <AdminOverview stats={stats} />;
+      case DASHBOARD_SECTIONS.USERS:
+        return (
+          <UsersManagement
+            users={dashboardData.users}
+            totalUsers={stats.users}
+          />
+        );
+      case DASHBOARD_SECTIONS.TEAMS:
+        return (
+          <TeamsManagement
+            teams={dashboardData.teams}
+            teamMembers={dashboardData.teamMembers}
+            totalTeams={stats.teams}
+            totalTeamMembers={stats.teamMembers}
+          />
+        );
+      case DASHBOARD_SECTIONS.EVENTS:
+        return (
+          <EventsManagement
+            events={dashboardData.events}
+            totalEvents={publishedEvents.length}
+            draftEventsCount={draftEvents.length}
+          />
+        );
+      case DASHBOARD_SECTIONS.SETTINGS:
+        return <AdminSettings />;
+      default:
+        return <AdminOverview stats={stats} />;
+    }
   };
 
   return (
@@ -233,56 +307,18 @@ export default function AdminDashboard() {
                 <SidebarGroupLabel>Menu</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeSection === "overview"}
-                        onClick={() => setActiveSection("overview")}
-                        className="cursor-pointer"
-                      >
-                        <HomeIcon className="mr-2" />
-                        <span>Overview</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeSection === "users"}
-                        onClick={() => setActiveSection("users")}
-                        className="cursor-pointer"
-                      >
-                        <UsersIcon className="mr-2" />
-                        <span>Users</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeSection === "teams"}
-                        onClick={() => setActiveSection("teams")}
-                        className="cursor-pointer"
-                      >
-                        <UserCogIcon className="mr-2" />
-                        <span>Teams</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeSection === "events"}
-                        onClick={() => setActiveSection("events")}
-                        className="cursor-pointer"
-                      >
-                        <CalendarIcon className="mr-2" />
-                        <span>Events</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        isActive={activeSection === "settings"}
-                        onClick={() => setActiveSection("settings")}
-                        className="cursor-pointer"
-                      >
-                        <Settings2Icon className="mr-2" />
-                        <span>Settings</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    {sidebarItems.map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          isActive={activeSection === item.id}
+                          onClick={() => setActiveSection(item.id)}
+                          className="cursor-pointer"
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -308,66 +344,55 @@ export default function AdminDashboard() {
   );
 }
 
-// Updated components for different sections of the admin dashboard
+// AdminOverview component for the Overview section
 function AdminOverview({ stats }: { stats: StatsType }) {
+  // Overview stat cards configuration
+  const statCards = [
+    {
+      title: "User Stats",
+      icon: <UsersIcon className="mr-2 h-5 w-5" />,
+      value: stats.users,
+      description: "Total registered users",
+    },
+    {
+      title: "Teams",
+      icon: <UserCogIcon className="mr-2 h-5 w-5" />,
+      value: stats.teams,
+      description: "Active teams",
+    },
+    {
+      title: "Events",
+      icon: <CalendarIcon className="mr-2 h-5 w-5" />,
+      value: stats.events,
+      description: "Total events",
+    },
+    {
+      title: "Team Members",
+      icon: <UsersIcon className="mr-2 h-5 w-5" />,
+      value: stats.teamMembers,
+      description: "Active team memberships",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <UsersIcon className="mr-2 h-5 w-5" />
-            User Stats
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{stats.users}</div>
-          <p className="text-muted-foreground text-sm">
-            Total registered users
-          </p>
-        </CardContent>
-      </Card>
+      {/* Render stat cards */}
+      {statCards.map((card, index) => (
+        <Card key={index}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              {card.icon}
+              {card.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{card.value}</div>
+            <p className="text-muted-foreground text-sm">{card.description}</p>
+          </CardContent>
+        </Card>
+      ))}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <UserCogIcon className="mr-2 h-5 w-5" />
-            Teams
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{stats.teams}</div>
-          <p className="text-muted-foreground text-sm">Active teams</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <CalendarIcon className="mr-2 h-5 w-5" />
-            Events
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{stats.events}</div>
-          <p className="text-muted-foreground text-sm">Total events</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <UsersIcon className="mr-2 h-5 w-5" />
-            Team Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{stats.teamMembers}</div>
-          <p className="text-muted-foreground text-sm">
-            Active team memberships
-          </p>
-        </CardContent>
-      </Card>
-
+      {/* Security status card */}
       <Card className="md:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center">
@@ -386,6 +411,7 @@ function AdminOverview({ stats }: { stats: StatsType }) {
         </CardContent>
       </Card>
 
+      {/* Support card */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center">
@@ -402,6 +428,7 @@ function AdminOverview({ stats }: { stats: StatsType }) {
   );
 }
 
+// AdminSettings component for the Settings section
 function AdminSettings() {
   return (
     <div>
