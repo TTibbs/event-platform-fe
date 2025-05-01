@@ -576,7 +576,7 @@ export default function Events() {
               onValueChange={handleItemsPerPageChange}
               defaultValue={itemsPerPage.toString()}
             >
-              <SelectTrigger className="w-[100px] h-8">
+              <SelectTrigger className="w-[150px] h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
