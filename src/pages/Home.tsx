@@ -128,13 +128,13 @@ export default function Home() {
           <div className="flex justify-center gap-4">
             <Button
               variant="outline"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/auth/login")}
               className="cursor-pointer"
             >
               Sign In
             </Button>
             <Button
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/auth/signup")}
               className="cursor-pointer"
             >
               Sign Up
