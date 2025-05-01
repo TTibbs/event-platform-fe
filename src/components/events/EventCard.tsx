@@ -83,7 +83,6 @@ export function EventCard({
   const formattedEndTime = format(new Date(event.end_time), "h:mm a");
 
   // Event properties
-  const isPublished = event.status === "published";
   const hasTicketPrice =
     event.price !== null && event.price !== undefined && event.price > 0;
   const showTicketsRemaining =
@@ -115,7 +114,7 @@ export function EventCard({
   }, [isAlreadyRegistered, event.price]);
 
   const handleRegister = async () => {
-    if (!isPublished || !userId || isAlreadyRegistered || isSoldOut) return;
+    if (!userId || isAlreadyRegistered || isSoldOut) return;
 
     setIsRegistering(true);
     setRegistrationError(null);
@@ -192,9 +191,6 @@ export function EventCard({
               </div>
             </div>
           )}
-          <div className="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-background text-foreground shadow">
-            {isPublished ? "Published" : "Draft"}
-          </div>
         </div>
       )}
 
@@ -282,7 +278,7 @@ export function EventCard({
                 Details
               </Button>
 
-              {userId && isPublished && !event.is_past && (
+              {userId && !event.is_past && (
                 <>
                   {checkingRegistration || checkingTicket ? (
                     <Button disabled className="flex-1">
@@ -331,7 +327,7 @@ export function EventCard({
                   )}
                 </>
               )}
-              {userId && isPublished && event.is_past && (
+              {userId && event.is_past && (
                 <Button disabled className="flex-1 bg-muted">
                   Event Ended
                 </Button>
