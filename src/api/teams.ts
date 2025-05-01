@@ -64,6 +64,10 @@ const teamsApi = {
     return axiosClient.delete(`/teams/${id}`);
   },
 
+  deleteTeamMember: (teamId: string, memberId: string) => {
+    return axiosClient.delete(`/teams/${teamId}/members/${memberId}`);
+  },
+
   addTeamMember: (params: AddMemberParams) => {
     return axiosClient.post("/teams/members", params);
   },

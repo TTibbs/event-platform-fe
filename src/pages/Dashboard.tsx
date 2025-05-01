@@ -11,11 +11,13 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const {
@@ -27,19 +29,35 @@ export default function Dashboard() {
     activeSection,
     setActiveSection,
     user,
+    teamId,
   } = useDashboard();
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState<boolean>(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Fetch user's team role
+  // Fetch user's team role from the teams array in the user object
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!authUser?.id) return;
 
       try {
         setRoleLoading(true);
+
+        // Check if user has teams in auth context
+        if (authUser.teams && authUser.teams.length > 0) {
+          // Find the team that matches the current teamId
+          const currentTeam = authUser.teams.find(
+            (team) => team.team_id === teamId
+          );
+          if (currentTeam) {
+            setUserRole(currentTeam.role);
+            return;
+          }
+        }
+
+        // Fallback to API call if not found in user object
         const response = await teamsApi.getMemberRoleByUserId(
           authUser.id.toString()
         );
@@ -52,11 +70,14 @@ export default function Dashboard() {
     };
 
     fetchUserRole();
-  }, [authUser?.id]);
+  }, [authUser?.id, authUser?.teams, teamId]);
 
   // Check if user can edit events
   const canEditEvents =
     userRole && ["team_admin", "event_manager"].includes(userRole);
+
+  // Check if user can delete team members
+  const canDeleteTeamMembers = userRole && ["team_admin"].includes(userRole);
 
   // Navigate to create event page when that section is selected
   useEffect(() => {
@@ -91,6 +112,25 @@ export default function Dashboard() {
     return role
       .replace(/_/g, " ")
       .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  // Handle deleting a team member
+  const handleDeleteTeamMember = async (memberId: number) => {
+    if (!teamId) return;
+
+    try {
+      setIsDeleting(memberId.toString());
+      await teamsApi.deleteTeamMember(teamId.toString(), memberId.toString());
+      toast.success("Team member removed successfully");
+
+      // Refresh the page to show updated team members
+      window.location.reload();
+    } catch (err) {
+      console.error("Failed to delete team member:", err);
+      toast.error("Failed to remove team member");
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
   if (loading || roleLoading) {
@@ -152,6 +192,20 @@ export default function Dashboard() {
                   {new Date(member.team_created_at).toLocaleDateString()}
                 </p>
               </CardContent>
+              {canDeleteTeamMembers && member.user_id !== authUser?.id && (
+                <CardFooter>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteTeamMember(member.user_id)}
+                    disabled={isDeleting === member.user_id.toString()}
+                  >
+                    {isDeleting === member.user_id.toString()
+                      ? "Removing..."
+                      : "Remove"}
+                  </Button>
+                </CardFooter>
+              )}
             </Card>
           ))}
         </div>
