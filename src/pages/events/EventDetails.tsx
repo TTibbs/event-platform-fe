@@ -1,6 +1,5 @@
 import eventsApi from "@/api/events";
 import teamsApi from "@/api/teams";
-import usersApi from "@/api/users";
 import ticketsApi from "@/api/tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
@@ -150,7 +149,7 @@ export default function EventDetails() {
 
         // Check if user can edit this event
         if (isAuthenticated && user && eventData.team_id) {
-          checkEditPermission(eventData.team_id);
+          checkEditPermission(eventData);
         }
 
         // Check if user is registered for this event
@@ -168,76 +167,52 @@ export default function EventDetails() {
   }, [id, isAuthenticated, user, lastChecked]);
 
   // Check if user has permission to edit this event
-  const checkEditPermission = async (teamId: number) => {
+  const checkEditPermission = async (eventData: EventDetail) => {
     if (!user?.id) return;
 
     try {
-      // Check if user is the creator - add detailed logging
+      // If user is site admin, they can edit
+      if (user.is_site_admin) {
+        console.log("User is site admin - granting edit permission");
+        setCanEdit(true);
+        return;
+      }
+
+      // Check if user is the creator
       const currentUserId = Number(user.id);
-      const eventCreatorId = Number(event?.created_by);
+      const eventCreatorId = Number(eventData.created_by);
 
-      console.log("Permission check:", {
-        currentUserId,
-        eventCreatorId,
-        isCreator: currentUserId === eventCreatorId,
-        currentUsername: user?.username,
-        creatorUsername: event?.creator_username,
-        eventTitle: event?.title,
-      });
-
-      // Check by ID or username
       if (
         currentUserId === eventCreatorId ||
-        user.username === event?.creator_username
+        user.username === eventData.creator_username
       ) {
         console.log("User is creator - granting edit permission");
         setCanEdit(true);
         return;
       }
 
-      // Get user details to check global role
+      // Check team role for permission
       try {
-        const userResponse = await usersApi.getUserById(user.id.toString());
-        const userData = userResponse.data.user;
-
-        // If user is site admin, they can edit
-        if (userData.is_site_admin) {
-          console.log("User is site admin - granting edit permission");
-          setCanEdit(true);
-          return;
-        }
-      } catch (error) {
-        console.error("Failed to check user role:", error);
-      }
-
-      // Check team membership role
-      try {
-        const membershipResponse = await teamsApi.getMemberByUserId(
+        const roleResponse = await teamsApi.getMemberRoleByUserId(
           user.id.toString()
         );
-        const memberships = membershipResponse.data.team_members || [];
+        const userRole = roleResponse.data.role;
 
-        // Check if the user has edit permission in the event's team
-        const hasEditPermission = memberships.some(
-          (membership: any) =>
-            membership.team_id === teamId &&
-            ["team_admin", "owner", "organizer", "event_manager"].includes(
-              membership.role
-            )
-        );
-
-        if (hasEditPermission) {
-          console.log(
-            "User has team role permission - granting edit permission"
-          );
+        // Check if user has appropriate role
+        if (
+          ["team_admin", "event_manager", "owner", "organizer"].includes(
+            userRole
+          )
+        ) {
+          console.log(`User has ${userRole} role - granting edit permission`);
           setCanEdit(true);
           return;
         }
-      } catch (error) {
-        console.error("Failed to check team membership:", error);
+      } catch (err) {
+        console.error("Failed to check team role:", err);
       }
 
-      // If we got here, user doesn't have edit permission
+      // If all checks fail, user cannot edit
       console.log("User does not have edit permission");
       setCanEdit(false);
     } catch (err) {
@@ -348,7 +323,7 @@ export default function EventDetails() {
   // Navigate to edit page
   const handleEditEvent = () => {
     if (id) {
-      navigate(`/events/edit/${id}`);
+      navigate(`/events/${id}/edit`);
     }
   };
 
@@ -392,8 +367,7 @@ export default function EventDetails() {
       <section className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">{event.title}</h1>
-          {/* Show edit button if either our permission check says so OR user is the creator */}
-          {(canEdit || user?.id === event.created_by) && (
+          {canEdit && (
             <div className="flex items-center gap-2">
               <Button
                 onClick={handleEditEvent}
@@ -417,7 +391,11 @@ export default function EventDetails() {
 
         <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Details</h2>
+            <img
+              src={event.event_img_url}
+              alt={event.title}
+              className="w-1/2 h-auto object-cover rounded-lg mb-4"
+            />
             {event.description && <p className="mb-4">{event.description}</p>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -439,24 +417,12 @@ export default function EventDetails() {
                 <p className="text-muted-foreground">Status:</p>
                 <p className="font-medium capitalize">{event.status}</p>
               </div>
-              {event.price !== undefined && event.price !== null && (
-                <div>
-                  <p className="text-muted-foreground">Price:</p>
-                  <p className="font-medium">${event.price.toFixed(2)}</p>
-                </div>
-              )}
               {event.max_attendees !== undefined && (
                 <div>
                   <p className="text-muted-foreground">Capacity:</p>
                   <p className="font-medium">{event.max_attendees} attendees</p>
                 </div>
               )}
-              <div>
-                <p className="text-muted-foreground">Visibility:</p>
-                <p className="font-medium">
-                  {event.is_public ? "Public" : "Private"}
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -478,10 +444,13 @@ export default function EventDetails() {
                       : "You are registered for this event. Complete your purchase to receive your ticket."
                     : "Purchase your ticket to attend this event."}
                 </p>
+                <p className="text-muted-foreground mb-4">
+                  {event.tickets_remaining} tickets remaining
+                </p>
 
                 <div className="flex items-center gap-4">
                   <p className="font-medium text-lg">
-                    ${(event.price ?? 0).toFixed(2)}
+                    £{(event.price ?? 0).toFixed(2)}
                   </p>
                   {event.is_past ? (
                     <Button disabled className="bg-muted">

@@ -1,9 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DashboardSidebar, useDashboard } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/EventCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { Edit } from "lucide-react";
+import teamsApi from "@/api/teams";
 
 export default function Dashboard() {
   const {
@@ -16,6 +19,34 @@ export default function Dashboard() {
     user,
   } = useDashboard();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState<boolean>(true);
+
+  // Fetch user's team role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!authUser?.id) return;
+
+      try {
+        setRoleLoading(true);
+        const response = await teamsApi.getMemberRoleByUserId(
+          authUser.id.toString()
+        );
+        setUserRole(response.data.role);
+      } catch (err) {
+        console.error("Failed to fetch user role:", err);
+      } finally {
+        setRoleLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, [authUser?.id]);
+
+  // Check if user can edit events
+  const canEditEvents =
+    userRole && ["team_admin", "event_manager"].includes(userRole);
 
   // Navigate to create event page when that section is selected
   useEffect(() => {
@@ -24,7 +55,12 @@ export default function Dashboard() {
     }
   }, [activeSection, navigate]);
 
-  if (loading) {
+  // Navigate to edit event page
+  const handleEditEvent = (eventId: number) => {
+    navigate(`/events/${eventId}/edit`);
+  };
+
+  if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin h-10 w-10 border-4 border-primary rounded-full border-t-transparent"></div>
@@ -72,12 +108,25 @@ export default function Dashboard() {
                 {teamDraftEvents.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {teamDraftEvents.map((event) => (
-                      <EventCard
-                        key={event.id}
-                        event={event}
-                        userId={user?.id}
-                        variant="dashboard"
-                      />
+                      <div key={event.id} className="relative">
+                        <EventCard
+                          event={event}
+                          userId={user?.id}
+                          variant="dashboard"
+                        />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {canEditEvents && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="p-2 h-9 bg-background/80 backdrop-blur-sm cursor-pointer"
+                              onClick={() => handleEditEvent(event.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -102,12 +151,25 @@ export default function Dashboard() {
                 {teamEvents.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {teamEvents.map((event) => (
-                      <EventCard
-                        key={event.id}
-                        event={event}
-                        userId={user?.id}
-                        variant="dashboard"
-                      />
+                      <div key={event.id} className="relative">
+                        <EventCard
+                          event={event}
+                          userId={user?.id}
+                          variant="dashboard"
+                        />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {canEditEvents && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="p-2 h-9 bg-background/80 backdrop-blur-sm cursor-pointer"
+                              onClick={() => handleEditEvent(event.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (
