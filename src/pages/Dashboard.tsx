@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -164,6 +164,12 @@ export default function Dashboard() {
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
+                    {member.profile_image_url && (
+                      <AvatarImage
+                        src={member.profile_image_url}
+                        alt={member.username}
+                      />
+                    )}
                     <AvatarFallback className="bg-primary/10">
                       <User className="h-6 w-6 text-primary" />
                     </AvatarFallback>

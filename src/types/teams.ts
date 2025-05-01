@@ -11,6 +11,11 @@ export interface TeamMember {
   id: number;
   username: string;
   email: string;
+  profile_image_url: string;
+  is_site_admin: boolean;
+  stripe_customer_id: string;
+  created_at: string;
+  updated_at: string;
   user_id: number;
   team_id: number;
   role: string; // Note: "admin" is now "team_admin" in the backend
