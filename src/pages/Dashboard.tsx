@@ -5,7 +5,7 @@ import { DashboardSidebar, useDashboard } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/EventCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, User } from "lucide-react";
+import { Edit, Mail, User } from "lucide-react";
 import teamsApi from "@/api/teams";
 import {
   Card,
@@ -72,6 +72,10 @@ export default function Dashboard() {
     fetchUserRole();
   }, [authUser?.id, authUser?.teams, teamId]);
 
+  // Check if user can edit events
+  const canEditEvents =
+    userRole && ["team_admin", "event_manager"].includes(userRole);
+
   // Check if user can delete team members
   const canDeleteTeamMembers = userRole && ["team_admin"].includes(userRole);
 
@@ -81,6 +85,11 @@ export default function Dashboard() {
       navigate("/events/create");
     }
   }, [activeSection, navigate]);
+
+  // Navigate to edit event page
+  const handleEditEvent = (eventId: number) => {
+    navigate(`/events/${eventId}/edit`);
+  };
 
   // Get role badge color
   const getRoleBadgeColor = (role: string) => {
@@ -242,6 +251,18 @@ export default function Dashboard() {
                           userId={user?.id}
                           variant="dashboard"
                         />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {canEditEvents && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="p-2 h-9 bg-background/80 backdrop-blur-sm cursor-pointer"
+                              onClick={() => handleEditEvent(event.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -273,6 +294,18 @@ export default function Dashboard() {
                           userId={user?.id}
                           variant="dashboard"
                         />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          {canEditEvents && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="p-2 h-9 bg-background/80 backdrop-blur-sm cursor-pointer"
+                              onClick={() => handleEditEvent(event.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

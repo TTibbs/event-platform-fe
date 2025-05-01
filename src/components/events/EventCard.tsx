@@ -12,19 +12,11 @@ import { format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
-import {
-  PencilIcon,
-  Users,
-  Calendar,
-  MapPin,
-  ImageIcon,
-  Ticket,
-} from "lucide-react";
+import { Users, Calendar, MapPin, ImageIcon, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useEventRegistrationStatus,
   useEventTicketStatus,
-  useEventEditPermission,
   useRegisterForEvent,
 } from "@/hooks/useEventQueries";
 import { EventProps } from "@/types/eventCard";
@@ -82,9 +74,6 @@ export function EventCard({
 
   const { data: hasPaidTicket = false, isLoading: checkingTicket } =
     useEventTicketStatus(event.id, userId);
-
-  const { data: canEdit = false, isLoading: checkingPermissions } =
-    useEventEditPermission(event.id, userId);
 
   const registerMutation = useRegisterForEvent(event.id);
 
@@ -155,10 +144,6 @@ export function EventCard({
     }
   };
 
-  const handleEditEvent = () => {
-    navigate(`/events/edit/${event.id}`);
-  };
-
   // Function to handle image loading errors
   const handleImageError = () => {
     setImageError(true);
@@ -210,19 +195,6 @@ export function EventCard({
           <div className="absolute top-2 right-2 px-2 py-1 text-xs rounded-full bg-background text-foreground shadow">
             {isPublished ? "Published" : "Draft"}
           </div>
-          {!checkingPermissions && canEdit && (
-            <div className="absolute top-2 left-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEditEvent}
-                className="bg-background/80 hover:bg-background"
-              >
-                <PencilIcon className="h-3.5 w-3.5" />
-                <span className="ml-1">Edit</span>
-              </Button>
-            </div>
-          )}
         </div>
       )}
 
@@ -237,12 +209,6 @@ export function EventCard({
                 </CardDescription>
               )}
             </div>
-            {!opts.showImage && !checkingPermissions && canEdit && (
-              <Button variant="outline" size="sm" onClick={handleEditEvent}>
-                <PencilIcon className="h-3.5 w-3.5" />
-                <span className="ml-1">Edit</span>
-              </Button>
-            )}
           </div>
         </CardHeader>
 
