@@ -5,13 +5,23 @@ import { DashboardSidebar, useDashboard } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/EventCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { Edit } from "lucide-react";
+import { Edit, Mail, User } from "lucide-react";
 import teamsApi from "@/api/teams";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const {
     teamDraftEvents,
     teamEvents,
+    teamMembers,
     loading,
     error,
     activeSection,
@@ -60,6 +70,29 @@ export default function Dashboard() {
     navigate(`/events/${eventId}/edit`);
   };
 
+  // Get role badge color
+  const getRoleBadgeColor = (role: string) => {
+    switch (role.toLowerCase()) {
+      case "team_admin":
+        return "bg-red-500";
+      case "event_manager":
+        return "bg-blue-500";
+      case "owner":
+        return "bg-purple-500";
+      case "organizer":
+        return "bg-green-500";
+      default:
+        return "bg-slate-500";
+    }
+  };
+
+  // Format role for display
+  const formatRole = (role: string) => {
+    return role
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   if (loading || roleLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -77,6 +110,59 @@ export default function Dashboard() {
     );
   }
 
+  // Render team members section
+  const renderTeamMembers = () => (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Team Members</h2>
+      </div>
+
+      {teamMembers.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {teamMembers.map((member) => (
+            <Card key={member.id} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-primary/10">
+                      <User className="h-6 w-6 text-primary" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-lg">{member.username}</CardTitle>
+                    <CardDescription>
+                      <Badge
+                        className={`${getRoleBadgeColor(
+                          member.role
+                        )} text-white mt-1`}
+                      >
+                        {formatRole(member.role)}
+                      </Badge>
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Mail className="h-4 w-4" />
+                  <span>{member.email}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Team joined:{" "}
+                  {new Date(member.team_created_at).toLocaleDateString()}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-muted border border-border rounded-md p-8 text-center">
+          <p className="text-muted-foreground mb-4">No team members found.</p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="pb-64 md:pb-44">
       <SidebarProvider>
@@ -92,8 +178,10 @@ export default function Dashboard() {
               <p className="text-muted-foreground">Manage your team's events</p>
             </div>
 
-            {/* Display either draft events or all events based on active section */}
-            {activeSection === "draft-events" ? (
+            {/* Display based on active section */}
+            {activeSection === "team-members" ? (
+              renderTeamMembers()
+            ) : activeSection === "draft-events" ? (
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">Draft Events</h2>

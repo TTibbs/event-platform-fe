@@ -4,10 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import eventsApi from "@/api/events";
 import teamsApi from "@/api/teams";
 import { Event } from "@/types/events";
+import { TeamMember } from "@/types/teams";
 
 export function useDashboard() {
   const [teamDraftEvents, setTeamDraftEvents] = useState<Event[]>([]);
   const [teamEvents, setTeamEvents] = useState<Event[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
@@ -124,6 +126,36 @@ export function useDashboard() {
     };
   }, [teamId]);
 
+  // Fetch team members
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTeamMembers = async () => {
+      if (!teamId) return;
+
+      try {
+        const response = await teamsApi.getTeamMembers(teamId.toString());
+        if (isMounted) {
+          setTeamMembers(response.data.members || []);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err
+              : new Error(err?.message || "Unknown error")
+          );
+        }
+      }
+    };
+
+    fetchTeamMembers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [teamId]);
+
   return {
     teamDraftEvents,
     teamEvents,
@@ -133,6 +165,7 @@ export function useDashboard() {
     activeSection,
     setActiveSection,
     teamId,
+    teamMembers,
     user,
   };
 }
