@@ -50,6 +50,13 @@ interface ExtractedTeamMember {
   role: string;
 }
 
+interface StatsType {
+  users: number;
+  teams: number;
+  events: number;
+  teamMembers: number;
+}
+
 export default function AdminDashboard() {
   const {
     isSiteAdmin,
@@ -66,12 +73,7 @@ export default function AdminDashboard() {
     teamMembers: [],
     events: [],
   });
-  const [stats, setStats] = useState<{
-    users: number;
-    teams: number;
-    events: number;
-    teamMembers: number;
-  }>({
+  const [stats, setStats] = useState<StatsType>({
     users: 0,
     teams: 0,
     events: 0,
@@ -175,46 +177,41 @@ export default function AdminDashboard() {
   }
 
   const renderContent = () => {
-    switch (activeSection) {
-      case "overview":
-        return <AdminOverview stats={stats} />;
-      case "users":
-        return (
-          <UsersManagement
-            users={dashboardData.users}
-            totalUsers={stats.users}
-          />
-        );
-      case "teams":
-        return (
-          <TeamsManagement
-            teams={dashboardData.teams}
-            teamMembers={dashboardData.teamMembers}
-            totalTeams={stats.teams}
-            totalTeamMembers={stats.teamMembers}
-          />
-        );
-      case "events":
-        // Count published and draft events separately
-        const publishedEvents = dashboardData.events.filter(
-          (event) => event.status === "published"
-        );
-        const draftEvents = dashboardData.events.filter(
-          (event) => event.status === "draft"
-        );
+    // Count published and draft events separately for the events management section
+    const publishedEvents = dashboardData.events.filter(
+      (event) => event.status === "published"
+    );
+    const draftEvents = dashboardData.events.filter(
+      (event) => event.status === "draft"
+    );
 
-        return (
-          <EventsManagement
-            events={dashboardData.events}
-            totalEvents={publishedEvents.length}
-            draftEventsCount={draftEvents.length}
-          />
-        );
-      case "settings":
-        return <AdminSettings />;
-      default:
-        return <AdminOverview stats={stats} />;
-    }
+    // Map each section to its component with appropriate props
+    const sections = {
+      overview: <AdminOverview stats={stats} />,
+      users: (
+        <UsersManagement users={dashboardData.users} totalUsers={stats.users} />
+      ),
+      teams: (
+        <TeamsManagement
+          teams={dashboardData.teams}
+          teamMembers={dashboardData.teamMembers}
+          totalTeams={stats.teams}
+          totalTeamMembers={stats.teamMembers}
+        />
+      ),
+      events: (
+        <EventsManagement
+          events={dashboardData.events}
+          totalEvents={publishedEvents.length}
+          draftEventsCount={draftEvents.length}
+        />
+      ),
+      settings: <AdminSettings />,
+    };
+
+    return (
+      sections[activeSection as keyof typeof sections] || sections.overview
+    );
   };
 
   return (
@@ -321,11 +318,7 @@ export default function AdminDashboard() {
 }
 
 // Updated components for different sections of the admin dashboard
-function AdminOverview({
-  stats,
-}: {
-  stats: { users: number; teams: number; events: number; teamMembers: number };
-}) {
+function AdminOverview({ stats }: { stats: StatsType }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Event, CreateEventParams, UpdateEventParams } from "@/types/events";
+import { Event, CreateEventParams } from "@/types/events";
 import { Calendar, EyeIcon, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,10 +69,8 @@ export default function EventsManagement({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
-  const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
   const [teams, setTeams] = useState<{ id: number; name: string }[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -93,9 +91,6 @@ export default function EventsManagement({
 
   const [newEvent, setNewEvent] =
     useState<CreateEventParams>(defaultEventState);
-  const [editedEvent, setEditedEvent] = useState<UpdateEventParams>({
-    ...defaultEventState,
-  });
 
   // Fetch teams for the dropdown
   const fetchTeams = async () => {
@@ -137,10 +132,6 @@ export default function EventsManagement({
     return new Date(dateString).toLocaleDateString();
   };
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toISOString().slice(0, 16);
-  };
-
   const getEventStatusBadge = (status: string) => {
     switch (status) {
       case "published":
@@ -176,28 +167,6 @@ export default function EventsManagement({
     }
   };
 
-  const handleEditInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setEditedEvent((prev) => ({
-      ...prev,
-      [name]: ["price", "max_attendees", "team_id"].includes(name)
-        ? Number(value)
-        : value,
-    }));
-
-    // Clear error when user types
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
-
   const handleCheckboxChange = (name: string, checked: boolean) => {
     setNewEvent((prev) => ({
       ...prev,
@@ -205,14 +174,7 @@ export default function EventsManagement({
     }));
   };
 
-  const handleEditCheckboxChange = (name: string, checked: boolean) => {
-    setEditedEvent((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
-
-  const validateForm = (data: CreateEventParams | UpdateEventParams) => {
+  const validateForm = (data: CreateEventParams) => {
     const errors: Record<string, string> = {};
 
     if (!data.title || !data.title.trim()) {
@@ -298,100 +260,8 @@ export default function EventsManagement({
   };
 
   const handleEditClick = (event: Event) => {
-    setEventToEdit(event);
-
-    // Convert event to UpdateEventParams format with proper typing
-    setEditedEvent({
-      title: event.title,
-      description: event.description || "",
-      location: event.location || "",
-      start_time: formatDateTime(event.start_time),
-      end_time: formatDateTime(event.end_time),
-      price: event.price || 0,
-      max_attendees: event.max_attendees || 100,
-      team_id: event.team_id,
-      status: event.status as "draft" | "published" | "cancelled",
-      is_public: event.is_public,
-      category: event.category,
-    });
-
-    setFormErrors({});
-    setEditDialogOpen(true);
-  };
-
-  const updateEvent = async () => {
-    if (!eventToEdit || !validateForm(editedEvent)) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Check if status is changing (for count updates)
-      const oldStatus = eventToEdit.status;
-      const newStatus = editedEvent.status;
-      const statusChanged = oldStatus !== newStatus;
-
-      // Optimistically update the UI
-      const teamName =
-        teams.find((t) => t.id === editedEvent.team_id)?.name ||
-        eventToEdit.team_name;
-
-      setEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === eventToEdit.id
-            ? {
-                ...event,
-                ...editedEvent,
-                team_id:
-                  typeof editedEvent.team_id === "string"
-                    ? parseInt(editedEvent.team_id, 10)
-                    : editedEvent.team_id || event.team_id,
-                team_name: teamName,
-              }
-            : event
-        )
-      );
-
-      // Update counts if status changed
-      if (statusChanged) {
-        if (oldStatus === "published" && newStatus === "draft") {
-          setTotalEvents((prev) => Math.max(0, prev - 1));
-          setDraftEventsCount((prev) => prev + 1);
-        } else if (oldStatus === "draft" && newStatus === "published") {
-          setTotalEvents((prev) => prev + 1);
-          setDraftEventsCount((prev) => Math.max(0, prev - 1));
-        }
-      }
-
-      // Make the API call
-      await eventsApi.updateEvent(eventToEdit.id.toString(), editedEvent);
-
-      setEditDialogOpen(false);
-      setEventToEdit(null);
-      toast.success(`Event "${editedEvent.title}" updated successfully`);
-    } catch (error: unknown) {
-      // Revert optimistic update on error
-      setEvents(initialEvents);
-
-      // Revert count changes
-      setTotalEvents(initialTotalEvents || initialEvents.length);
-      setDraftEventsCount(initialDraftEventsCount || 0);
-
-      const errorMessage =
-        typeof error === "object" && error !== null
-          ? (error as any).response?.data?.msg ||
-            (error as any).response?.data?.message ||
-            (error as any).message ||
-            "Failed to update event"
-          : "Failed to update event";
-
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    // Redirect to the EditEvent page with the event ID
+    navigate(`/events/edit/${event.id}`);
   };
 
   const handleDeleteClick = (event: Event) => {
@@ -784,256 +654,6 @@ export default function EventsManagement({
             </Button>
             <Button onClick={addEvent} disabled={loading}>
               {loading ? "Creating..." : "Create Event"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Event Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-            <DialogDescription>Update event details.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-title" className="text-right">
-                Title*
-              </label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-title"
-                  name="title"
-                  value={editedEvent.title}
-                  onChange={handleEditInputChange}
-                  className={formErrors.title ? "border-red-500" : ""}
-                  required
-                />
-                {formErrors.title && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {formErrors.title}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-start gap-4">
-              <label htmlFor="edit-description" className="text-right pt-2">
-                Description
-              </label>
-              <div className="col-span-3">
-                <Textarea
-                  id="edit-description"
-                  name="description"
-                  value={editedEvent.description}
-                  onChange={handleEditInputChange}
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-location" className="text-right">
-                Location
-              </label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-location"
-                  name="location"
-                  value={editedEvent.location}
-                  onChange={handleEditInputChange}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-start_time" className="text-right">
-                Start Time*
-              </label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-start_time"
-                  name="start_time"
-                  type="datetime-local"
-                  value={editedEvent.start_time}
-                  onChange={handleEditInputChange}
-                  className={formErrors.start_time ? "border-red-500" : ""}
-                  required
-                />
-                {formErrors.start_time && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {formErrors.start_time}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-end_time" className="text-right">
-                End Time*
-              </label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-end_time"
-                  name="end_time"
-                  type="datetime-local"
-                  value={editedEvent.end_time}
-                  onChange={handleEditInputChange}
-                  className={formErrors.end_time ? "border-red-500" : ""}
-                  required
-                />
-                {formErrors.end_time && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {formErrors.end_time}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-team_id" className="text-right">
-                Team*
-              </label>
-              <div className="col-span-3">
-                <Select
-                  onValueChange={(value) =>
-                    handleEditInputChange({
-                      target: { name: "team_id", value },
-                    } as React.ChangeEvent<HTMLSelectElement>)
-                  }
-                  value={editedEvent.team_id?.toString()}
-                >
-                  <SelectTrigger
-                    className={formErrors.team_id ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select a team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id.toString()}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formErrors.team_id && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {formErrors.team_id}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-price" className="text-right">
-                Price
-              </label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-price"
-                  name="price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editedEvent.price}
-                  onChange={handleEditInputChange}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-max_attendees" className="text-right">
-                Max Attendees
-              </label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-max_attendees"
-                  name="max_attendees"
-                  type="number"
-                  min="1"
-                  value={editedEvent.max_attendees}
-                  onChange={handleEditInputChange}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-event_type" className="text-right">
-                Event Type
-              </label>
-              <div className="col-span-3">
-                <Select
-                  onValueChange={(value) =>
-                    handleEditInputChange({
-                      target: { name: "event_type", value },
-                    } as React.ChangeEvent<HTMLSelectElement>)
-                  }
-                  value={editedEvent.category}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select event type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="workshop">Workshop</SelectItem>
-                    <SelectItem value="conference">Conference</SelectItem>
-                    <SelectItem value="meetup">Meetup</SelectItem>
-                    <SelectItem value="webinar">Webinar</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-status" className="text-right">
-                Status
-              </label>
-              <div className="col-span-3">
-                <Select
-                  onValueChange={(value) =>
-                    handleEditInputChange({
-                      target: { name: "status", value },
-                    } as React.ChangeEvent<HTMLSelectElement>)
-                  }
-                  value={editedEvent.status}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-is_public" className="text-right">
-                Public Event
-              </label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Checkbox
-                  id="edit-is_public"
-                  checked={editedEvent.is_public}
-                  onCheckedChange={(checked) =>
-                    handleEditCheckboxChange("is_public", checked === true)
-                  }
-                />
-                <label htmlFor="edit-is_public" className="text-sm">
-                  Make this event visible to all users
-                </label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={updateEvent} disabled={loading}>
-              {loading ? "Updating..." : "Update Event"}
             </Button>
           </DialogFooter>
         </DialogContent>

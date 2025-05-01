@@ -16,14 +16,14 @@ export default function EditEvent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
-  const { user } = useAuth();
+  const { user, isSiteAdmin } = useAuth();
 
   // Check if user has permission to edit this event
   const checkEditPermission = async (event: Event) => {
     if (!user?.id) return false;
 
-    // Site admins can edit any event
-    if (user.is_site_admin) return true;
+    // Site admins can edit any event - immediately return true
+    if (isSiteAdmin) return true;
 
     // Event creators can edit their own events
     if (Number(user.id) === Number(event.created_by)) return true;
@@ -69,7 +69,7 @@ export default function EditEvent() {
     };
 
     fetchEventAndCheckPermission();
-  }, [eventId, user?.id]);
+  }, [eventId, user?.id, isSiteAdmin]);
 
   if (loading) {
     return (
@@ -137,8 +137,9 @@ export default function EditEvent() {
                 Permission Denied
               </h1>
               <p className="mt-2">
-                You don't have permission to edit this event. Only team admins,
-                event managers, or the event creator can edit this event.
+                You don't have permission to edit this event. Only site admins,
+                team admins, event managers, or the event creator can edit this
+                event.
               </p>
               <Button
                 className="mt-4"
