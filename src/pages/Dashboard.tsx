@@ -7,6 +7,7 @@ import {
   AllEventsList,
   useDashboard,
 } from "@/components/dashboard";
+import { useEffect } from "react";
 
 export default function Dashboard() {
   const {
@@ -14,18 +15,18 @@ export default function Dashboard() {
     teamEvents,
     loading,
     error,
-    isTeamMember,
     activeSection,
     setActiveSection,
     user,
   } = useDashboard();
   const navigate = useNavigate();
 
-  // If user isn't a team member, they'll be redirected by the useDashboard hook
-  // This is just a fallback
-  if (!isTeamMember && !loading) {
-    return null;
-  }
+  // Navigate to create event page when that section is selected
+  useEffect(() => {
+    if (activeSection === "create-event") {
+      navigate("/events/create");
+    }
+  }, [activeSection, navigate]);
 
   if (loading) {
     return (
@@ -44,34 +45,6 @@ export default function Dashboard() {
     );
   }
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case "overview":
-        return (
-          <DashboardOverview
-            draftEvents={teamDraftEvents}
-            allEvents={teamEvents}
-            userId={user?.id}
-          />
-        );
-      case "draft-events":
-        return <DraftEventsList events={teamDraftEvents} userId={user?.id} />;
-      case "all-events":
-        return <AllEventsList events={teamEvents} userId={user?.id} />;
-      case "create-event":
-        navigate("/events/create");
-        return null;
-      default:
-        return (
-          <DashboardOverview
-            draftEvents={teamDraftEvents}
-            allEvents={teamEvents}
-            userId={user?.id}
-          />
-        );
-    }
-  };
-
   return (
     <div className="pb-64 md:pb-44">
       <SidebarProvider>
@@ -87,7 +60,30 @@ export default function Dashboard() {
               <p className="text-muted-foreground">Manage your team's events</p>
             </div>
 
-            {renderContent()}
+            {/* Show content based on active section */}
+            {activeSection !== "create-event" && (
+              <>
+                {(activeSection === "overview" ||
+                  activeSection === "default") && (
+                  <DashboardOverview
+                    teamDraftEvents={teamDraftEvents}
+                    teamEvents={teamEvents}
+                    userId={user?.id}
+                  />
+                )}
+
+                {activeSection === "draft-events" && (
+                  <DraftEventsList
+                    teamDraftEvents={teamDraftEvents}
+                    userId={user?.id}
+                  />
+                )}
+
+                {activeSection === "all-events" && (
+                  <AllEventsList teamEvents={teamEvents} userId={user?.id} />
+                )}
+              </>
+            )}
           </div>
         </div>
       </SidebarProvider>

@@ -5,12 +5,12 @@ import { Event } from "@/types/events";
 
 // Component to show both draft and all events (overview)
 export function DashboardOverview({
-  draftEvents,
-  allEvents,
+  teamDraftEvents,
+  teamEvents,
   userId,
 }: {
-  draftEvents: Event[];
-  allEvents: Event[];
+  teamDraftEvents: Event[];
+  teamEvents: Event[];
   userId?: number;
 }) {
   const navigate = useNavigate();
@@ -28,9 +28,9 @@ export function DashboardOverview({
           </Button>
         </div>
 
-        {draftEvents.length > 0 ? (
+        {teamDraftEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {draftEvents.map((event) => (
+            {teamDraftEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}
@@ -51,7 +51,7 @@ export function DashboardOverview({
       <section>
         <h2 className="text-2xl font-bold mb-4">Recent Events</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {allEvents.slice(0, 3).map((event) => (
+          {teamEvents.slice(0, 3).map((event) => (
             <EventCard
               key={event.id}
               event={event}
@@ -60,13 +60,6 @@ export function DashboardOverview({
             />
           ))}
         </div>
-        {allEvents.length > 3 && (
-          <div className="mt-6 text-center">
-            <Button variant="outline" onClick={() => navigate("/events")}>
-              View All Events
-            </Button>
-          </div>
-        )}
       </section>
     </div>
   );
@@ -74,10 +67,10 @@ export function DashboardOverview({
 
 // Component to show only draft events
 export function DraftEventsList({
-  events,
+  teamDraftEvents,
   userId,
 }: {
-  events: Event[];
+  teamDraftEvents: Event[];
   userId?: number;
 }) {
   const navigate = useNavigate();
@@ -94,9 +87,9 @@ export function DraftEventsList({
         </Button>
       </div>
 
-      {events.length > 0 ? (
+      {teamDraftEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {events.map((event) => (
+          {teamDraftEvents.map((event) => (
             <EventCard
               key={event.id}
               event={event}
@@ -118,18 +111,18 @@ export function DraftEventsList({
 
 // Component to show all events
 export function AllEventsList({
-  events,
+  teamEvents,
   userId,
 }: {
-  events: Event[];
+  teamEvents: Event[];
   userId?: number;
 }) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">All Events</h2>
-      {events.length > 0 ? (
+      {teamEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {events.map((event) => (
+          {teamEvents.map((event) => (
             <EventCard
               key={event.id}
               event={event}

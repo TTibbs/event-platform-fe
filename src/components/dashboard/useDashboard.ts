@@ -18,78 +18,110 @@ export function useDashboard() {
 
   // Check if user is a member of any team
   useEffect(() => {
+    let isMounted = true;
+
     const checkTeamMembership = async () => {
       if (!user?.id) return;
 
       try {
         const response = await teamsApi.getMemberByUserId(user.id.toString());
         // If we get a successful response, the user is a team member
-        if (response.data && response.data.teamMember) {
+        if (isMounted && response.data && response.data.teamMember) {
           const teamMemberData = response.data.teamMember;
           setIsTeamMember(true);
           setTeamId(teamMemberData.team_id);
 
           // Update user data with team information
           updateUserData({ teamId: teamMemberData.team_id });
-        } else {
+        } else if (isMounted) {
           setIsTeamMember(false);
           navigate("/profile");
         }
       } catch (err) {
         // If we get an error, user is not a team member
-        setIsTeamMember(false);
-        // Redirect non-team members to profile page
-        navigate("/profile");
+        if (isMounted) {
+          setIsTeamMember(false);
+          // Redirect non-team members to profile page
+          navigate("/profile");
+        }
       }
     };
 
     checkTeamMembership();
-  }, [user, navigate, updateUserData]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, navigate, updateUserData]);
 
   // Fetch draft events when teamId is available
   useEffect(() => {
+    let isMounted = true;
+
     const fetchTeamDraftEvents = async () => {
       if (!isTeamMember || !teamId) return;
 
       setLoading(true);
       try {
         const response = await eventsApi.getTeamDraftEvents(teamId.toString());
-        setTeamDraftEvents(response.data.events || []);
+        if (isMounted) {
+          setTeamDraftEvents(response.data.events || []);
+        }
       } catch (err: any) {
-        setError(
-          err instanceof Error
-            ? err
-            : new Error(err?.message || "Unknown error")
-        );
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err
+              : new Error(err?.message || "Unknown error")
+          );
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchTeamDraftEvents();
+
+    return () => {
+      isMounted = false;
+    };
   }, [isTeamMember, teamId]);
 
   // Fetch all events when user is a team member
   useEffect(() => {
+    let isMounted = true;
+
     const fetchTeamEvents = async () => {
       if (!teamId) return;
 
       setLoading(true);
       try {
         const response = await eventsApi.getEventsByTeam(teamId.toString());
-        setTeamEvents(response.data.events || []);
+        if (isMounted) {
+          setTeamEvents(response.data.events || []);
+        }
       } catch (err: any) {
-        setError(
-          err instanceof Error
-            ? err
-            : new Error(err?.message || "Unknown error")
-        );
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err
+              : new Error(err?.message || "Unknown error")
+          );
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchTeamEvents();
+
+    return () => {
+      isMounted = false;
+    };
   }, [teamId]);
 
   return {
