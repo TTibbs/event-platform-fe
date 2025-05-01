@@ -5,6 +5,7 @@ import eventsApi from "@/api/events";
 import teamsApi from "@/api/teams";
 import { Event } from "@/types/events";
 import { TeamMember } from "@/types/teams";
+import { UserTeam } from "@/types/users";
 
 export function useDashboard() {
   const [teamDraftEvents, setTeamDraftEvents] = useState<Event[]>([]);
@@ -34,7 +35,15 @@ export function useDashboard() {
           setTeamId(teamMemberData.team_id);
 
           // Update user data with team information
-          updateUserData({ teamId: teamMemberData.team_id });
+          // Create a UserTeam object to comply with the User type
+          const userTeam: UserTeam = {
+            team_id: teamMemberData.team_id,
+            team_name: teamMemberData.team_name || "",
+            team_description: teamMemberData.team_description || "",
+            role: teamMemberData.role || "",
+          };
+
+          updateUserData({ teams: [userTeam] });
         } else if (isMounted) {
           setIsTeamMember(false);
           navigate("/profile");
