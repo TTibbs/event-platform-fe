@@ -1,13 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import {
-  DashboardSidebar,
-  DashboardOverview,
-  DraftEventsList,
-  AllEventsList,
-  useDashboard,
-} from "@/components/dashboard";
 import { useEffect } from "react";
+import { DashboardSidebar, useDashboard } from "@/components/dashboard";
+import { Button } from "@/components/ui/button";
+import { EventCard } from "@/components/events/EventCard";
 
 export default function Dashboard() {
   const {
@@ -60,29 +56,68 @@ export default function Dashboard() {
               <p className="text-muted-foreground">Manage your team's events</p>
             </div>
 
-            {/* Show content based on active section */}
-            {activeSection !== "create-event" && (
-              <>
-                {(activeSection === "overview" ||
-                  activeSection === "default") && (
-                  <DashboardOverview
-                    teamDraftEvents={teamDraftEvents}
-                    teamEvents={teamEvents}
-                    userId={user?.id}
-                  />
-                )}
+            {/* Display either draft events or all events based on active section */}
+            {activeSection === "draft-events" ? (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">Draft Events</h2>
+                  <Button
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={() => navigate("/events/create")}
+                  >
+                    Create New Event
+                  </Button>
+                </div>
 
-                {activeSection === "draft-events" && (
-                  <DraftEventsList
-                    teamDraftEvents={teamDraftEvents}
-                    userId={user?.id}
-                  />
+                {teamDraftEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {teamDraftEvents.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        userId={user?.id}
+                        variant="dashboard"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-muted border border-border rounded-md p-8 text-center">
+                    <p className="text-muted-foreground mb-4">
+                      You don't have any draft events.
+                    </p>
+                  </div>
                 )}
-
-                {activeSection === "all-events" && (
-                  <AllEventsList teamEvents={teamEvents} userId={user?.id} />
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">All Events</h2>
+                  <Button
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={() => navigate("/events/create")}
+                  >
+                    Create New Event
+                  </Button>
+                </div>
+                {teamEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {teamEvents.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        userId={user?.id}
+                        variant="dashboard"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-muted border border-border rounded-md p-8 text-center">
+                    <p className="text-muted-foreground mb-4">
+                      No events found.
+                    </p>
+                  </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>

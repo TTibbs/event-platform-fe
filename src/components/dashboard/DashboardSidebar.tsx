@@ -1,4 +1,4 @@
-import { FilePlus, Calendar, FileText, Home } from "lucide-react";
+import { FilePlus, Calendar, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -31,17 +31,17 @@ export function DashboardSidebar({
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Events</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={activeSection === "overview"}
-                  onClick={() => onSectionChange("overview")}
+                  isActive={activeSection === "all-events"}
+                  onClick={() => onSectionChange("all-events")}
                   className="cursor-pointer"
                 >
-                  <Home className="mr-2" />
-                  <span>Overview</span>
+                  <Calendar className="mr-2" />
+                  <span>All Events</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -52,16 +52,6 @@ export function DashboardSidebar({
                 >
                   <FileText className="mr-2" />
                   <span>Draft Events</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={activeSection === "all-events"}
-                  onClick={() => onSectionChange("all-events")}
-                  className="cursor-pointer"
-                >
-                  <Calendar className="mr-2" />
-                  <span>All Events</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
