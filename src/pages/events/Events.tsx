@@ -230,6 +230,9 @@ export default function Events() {
           <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-3 md:items-center">
               <div className="relative w-full md:w-64 lg:w-80">
+                <label htmlFor="search-input" className="sr-only">
+                  Search
+                </label>
                 <Input
                   ref={searchInputRef}
                   type="text"
@@ -237,6 +240,7 @@ export default function Events() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full"
+                  aria-label="Search events"
                 />
                 {searchQuery && (
                   <button
@@ -295,7 +299,10 @@ export default function Events() {
 
           {/* Event count and pagination controls */}
           <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:justify-between md:items-center">
-            <div className="text-sm text-muted-foreground text-center md:text-left order-2 md:order-1">
+            <div
+              className="text-sm text-muted-foreground text-center md:text-left order-2 md:order-1"
+              aria-live="polite"
+            >
               {isSearching ? (
                 <span>Found {searchResults.length} matching events</span>
               ) : (
@@ -324,7 +331,7 @@ export default function Events() {
                     <SelectItem value="24">24 per page</SelectItem>
                   </SelectContent>
                 </Select>
-                <Pagination>
+                <Pagination role="navigation" aria-label="Pagination">
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious
@@ -334,6 +341,7 @@ export default function Events() {
                             ? "pointer-events-none opacity-50"
                             : "cursor-pointer"
                         }
+                        aria-label="Previous page"
                       />
                     </PaginationItem>
 
@@ -347,6 +355,7 @@ export default function Events() {
                             ? "pointer-events-none opacity-50"
                             : "cursor-pointer"
                         }
+                        aria-label="Next page"
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -360,7 +369,7 @@ export default function Events() {
       <section className="mb-8 min-h-[300px]">
         {/* Show loading indicator when searching */}
         {isSearchLoading && (
-          <div className="flex justify-center my-8">
+          <div className="flex justify-center my-8" aria-live="assertive">
             <div className="animate-spin h-10 w-10 border-4 border-primary rounded-full border-t-transparent"></div>
           </div>
         )}
@@ -371,7 +380,10 @@ export default function Events() {
         ) : (
           !isSearchLoading &&
           !isEventsLoading && (
-            <div className="flex flex-col items-center justify-center py-12">
+            <div
+              className="flex flex-col items-center justify-center py-12"
+              aria-live="polite"
+            >
               <h2 className="text-xl font-medium mb-2">No events found</h2>
               <p className="text-muted-foreground">
                 {isSearching
