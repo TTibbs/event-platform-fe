@@ -44,9 +44,6 @@ export default function PaymentSuccess() {
           sessionId
         );
 
-        // Log payment status for debugging
-        console.log("Payment status verification:", verificationResult);
-
         if (!verificationResult.isPaid) {
           // Payment was not completed (user likely abandoned checkout)
           console.warn("User abandoned payment at Stripe checkout");

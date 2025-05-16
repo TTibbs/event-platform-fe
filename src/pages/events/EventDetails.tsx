@@ -44,7 +44,6 @@ export default function EventDetails() {
     if (ticketCacheKey) {
       const cachedStatus = localStorage.getItem(ticketCacheKey);
       if (cachedStatus === "true") {
-        console.log("Found cached paid ticket status, marking as paid");
         setHasPaidTicket(true);
         setIsRegistered(true);
       }
@@ -54,7 +53,6 @@ export default function EventDetails() {
   // Force a refresh when component is focused (e.g., after payment return)
   useEffect(() => {
     const handleFocus = () => {
-      console.log("Window focused, checking for registration updates");
       setLastChecked(Date.now());
     };
 
@@ -71,7 +69,6 @@ export default function EventDetails() {
 
       if (refreshFlag === "true") {
         // Force refresh registration status
-        console.log("Payment completed, refreshing status");
         setLastChecked(Date.now());
         sessionStorage.removeItem("refreshTicketStatus");
       }
@@ -79,10 +76,6 @@ export default function EventDetails() {
       // If this is the specific event that was paid for, DON'T immediately mark as paid
       // Instead, verify with the server first
       if (pendingEventId === id && user?.id) {
-        console.log(
-          `This event (${id}) was pending payment by user ${user.id}`
-        );
-
         try {
           // Verify actual payment status with the server before marking as paid
           const isPaid = await ticketsApi.hasUserPaidForEvent(
@@ -91,7 +84,6 @@ export default function EventDetails() {
           );
 
           if (isPaid) {
-            console.log("Payment verified by server, marking as paid");
             setIsRegistered(true);
             setHasPaidTicket(true);
 
@@ -101,9 +93,6 @@ export default function EventDetails() {
               localStorage.setItem(ticketCacheKey, "true");
             }
           } else {
-            console.log(
-              "Server confirmed payment not completed, clearing pending status"
-            );
             // Ensure we don't show as paid if the server says it's not paid
             setHasPaidTicket(false);
 
@@ -173,7 +162,6 @@ export default function EventDetails() {
     try {
       // If user is site admin, they can edit
       if (user.is_site_admin) {
-        console.log("User is site admin - granting edit permission");
         setCanEdit(true);
         return;
       }
@@ -186,7 +174,6 @@ export default function EventDetails() {
         currentUserId === eventCreatorId ||
         user.username === eventData.creator_username
       ) {
-        console.log("User is creator - granting edit permission");
         setCanEdit(true);
         return;
       }
@@ -204,16 +191,15 @@ export default function EventDetails() {
             userRole
           )
         ) {
-          console.log(`User has ${userRole} role - granting edit permission`);
           setCanEdit(true);
           return;
         }
       } catch (err) {
         console.error("Failed to check team role:", err);
+        setCanEdit(false);
       }
 
       // If all checks fail, user cannot edit
-      console.log("User does not have edit permission");
       setCanEdit(false);
     } catch (err) {
       console.error("Failed to check edit permissions:", err);
@@ -226,18 +212,12 @@ export default function EventDetails() {
     if (!user?.id) return;
 
     try {
-      console.log(
-        `Checking registration for event ${eventId}, user ${user.id}`
-      );
-
       // Check if registered
       const isUserRegistered = await eventsApi.isUserRegistered(
         eventId.toString(),
         user.id.toString()
       );
       setIsRegistered(isUserRegistered);
-      console.log(`User registered status: ${isUserRegistered}`);
-
       // If registered, check if they have a paid ticket
       if (isUserRegistered && event?.price && event.price > 0) {
         try {
@@ -246,15 +226,12 @@ export default function EventDetails() {
           let hasPaid = false;
 
           while (attempts < 3 && !hasPaid) {
-            console.log(`Checking payment status, attempt ${attempts + 1}`);
-
             hasPaid = await ticketsApi.hasUserPaidForEvent(
               user.id.toString(),
               eventId.toString()
             );
 
             if (hasPaid) {
-              console.log("Found paid ticket!");
               break;
             }
 
