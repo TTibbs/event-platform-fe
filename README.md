@@ -4,11 +4,31 @@ A modern, responsive web application for managing and attending events. Built wi
 
 ## Features
 
-- 🔐 User authentication and authorisation
-- 📅 Browse and search upcoming events
-- 🎫 Register for events and manage tickets
-- 👥 Team management and collaboration
-- 🛠️ Event creation and management dashboard
+### For Event Attendees
+
+- 🔍 Discover and search events with advanced filtering options
+- 🎫 One-click registration with automatic ticket generation
+- 📱 Mobile-responsive ticket access and management
+- 📅 Personal event calendar integration
+
+### For Event Organisers
+
+- 📊 Comprehensive event management dashboard
+- 👥 Team-based collaboration with role assignments
+- 📝 Customisable event creation with detailed configuration options
+- 🔔 Attendee communication tools
+
+### For Administrators
+
+- 🛡️ Robust user role management system
+- 📈 Analytics dashboard with registration insights
+- 🔐 Fine-grained permission controls
+- 👤 Team and user administration tools
+
+## Live Environments
+
+- Production Site: https://event-platform-fe-one.vercel.app/
+- API Endpoint: https://auth-api-test-1.onrender.com/api
 
 ## Tech Stack
 
@@ -22,6 +42,19 @@ A modern, responsive web application for managing and attending events. Built wi
 - **State Management**: React Context API
 - **Routing**: React Router v7
 - **Tanstack Query**: Tankstack React Query v5
+- **Authentication**: JWT with refresh token strategy
+
+## User Roles and Permissions
+
+Our platform implements a comprehensive role-based access control system:
+
+| Role          | Capabilities                                                                                                                                                            |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin         | Full system access including user management, team administration, and complete event control. Can promote other users to admin roles and access system-wide analytics. |
+| Team Admin    | Can create and manage teams, invite and remove team members, assign team roles, and oversee all team events.                                                            |
+| Event Manager | Creates and manages events for their team, controls event publication status, manages registrations and attendee lists, and handles ticket operations.                  |
+| Team Member   | Has visibility into team events and member information. Can assist with event organisation based on permissions granted.                                                |
+| Regular User  | Can browse events, register for events, manage personal tickets, and update their own profile information.                                                              |
 
 ## Getting Started
 
@@ -61,14 +94,6 @@ A modern, responsive web application for managing and attending events. Built wi
 
 5. Open your browser and navigate to `http://localhost:5173`
 
-### Building for Production
-
-```bash
-npm run build
-```
-
-The build artifacts will be stored in the `dist/` directory.
-
 ## Test Account Details
 
 Test Credentials
@@ -78,23 +103,31 @@ Test Credentials
 | Admin         | siteadmin    | password123 |
 | Team Admin    | alice123     | password123 |
 | Event Manager | eventmanager | password123 |
-| User          | regularuser  | password123 |
+| Regular User  | regularuser  | password123 |
 
-## User Roles and Permissions
+## Roadmap
 
-The application supports different user roles with varying permissions:
+We've implemented most of the core functionality, with some features still in development:
 
-- **Site Admin**: Full access to all features
-- **Team Admin**: Can create and manage events and team members
-- **Event Manager**: Can create and manage events for their team
-- **Team Member**: Can view team events and help with organisation
-- **User**: Can browse events, register, and manage their tickets
+- ✅ Core event browsing and registration
+- ✅ User authentication system
+- ✅ Team management
+- ✅ Event management dashboard
+- ✅ Ticket generation and verification
+- ✅ Role-based access control
+- ✅ Admin dashboard for site wide administration
+- ❌ Team member invitation system (coming in next sprint)
+- ❌ Registration export functionality (coming in next sprint)
 
-## Acknowledgements
+## API Integration
 
-- [React](https://react.dev/) - The library for web and native user interfaces
-- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
-- [Vite](https://vitejs.dev/) - Next generation frontend tooling
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [TankstackQuery](https://tanstack.com/query/latest) - React query management
+The application integrates with our Events API. Key endpoints include:
+
+- /api/auth - Authentication endpoints
+- /api/events - Event management
+- /api/stripe - Stripe payment and session management
+- /api/teams - Team management
+- /api/tickets - Ticket management
+- /api/users - User profiles
+
+Full API documentation is available at the [API Documentation](https://auth-api-test-1.onrender.com/api).
