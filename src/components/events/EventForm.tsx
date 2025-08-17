@@ -350,7 +350,7 @@ export default function EventForm({
             <Button
               variant="outline"
               type="button"
-              onClick={() => navigate("/events")}
+              onClick={() => navigate("/dashboard")}
             >
               Cancel
             </Button>
