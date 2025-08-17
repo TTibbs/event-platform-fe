@@ -14,7 +14,9 @@ import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { testimonials } from "@/lib/mockData";
+import { toast } from "sonner";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
+import { StickyBanner } from "@/components/ui/sticky-banner";
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -34,6 +36,7 @@ export default function Home() {
         const response = await eventsApi.getAllEvents();
         setEvents(response.data.events || []);
       } catch (error) {
+        toast.error("Error fetching events");
         console.error("Error fetching events:", error);
       }
     };
@@ -46,6 +49,11 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
+      <StickyBanner className="bg-gradient-to-b from-blue-500 to-blue-600">
+        <p className="mx-0 max-w-[90%] text-white drop-shadow-md">
+          API load times can take up to 45 seconds, thank you for your patience.
+        </p>
+      </StickyBanner>
       <section className="py-24 bg-gradient-to-b from-background to-muted">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center text-center space-y-8">
