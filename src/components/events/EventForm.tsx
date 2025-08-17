@@ -37,8 +37,9 @@ const formSchema = z.object({
   max_attendees: z.coerce.number().min(1, "Must allow at least 1 attendee"),
   status: z.enum(["published", "draft"]),
   category: z.string().min(1, "Event type is required"),
-  is_public: z.boolean().default(true),
+  is_public: z.boolean(),
   event_img_url: z.string().optional(),
+  event_image: z.instanceof(File).optional(), // File input
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -50,6 +51,8 @@ export default function EventForm({
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,9 +68,40 @@ export default function EventForm({
     return date.toISOString().slice(0, 16); // Format: "YYYY-MM-DDThh:mm"
   };
 
+  // Handle file selection
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      // Clear the URL input when file is selected
+      form.setValue("event_img_url", "");
+    }
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  // Handle URL input change
+  const handleUrlChange = (value: string) => {
+    if (value) {
+      // Clear file selection when URL is entered
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    }
+  };
+
   // Define the form with defaults based on whether we're editing
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: event?.title || "",
       description: event?.description || "",
@@ -97,21 +131,53 @@ export default function EventForm({
 
       if (isEditing && event?.id) {
         // Update existing event
-        await eventsApi.updateEvent(event.id.toString(), formattedData);
+        if (selectedFile) {
+          // Use FormData for file upload
+          const formData = new FormData();
+          formData.append("event_image", selectedFile);
+
+          // Add other fields
+          Object.entries(formattedData).forEach(([key, value]) => {
+            if (key !== "event_img_url" && key !== "event_image") {
+              formData.append(key, value?.toString() || "");
+            }
+          });
+
+          await eventsApi.updateEventWithFile(event.id.toString(), formData);
+        } else {
+          // Update without file
+          await eventsApi.updateEvent(event.id.toString(), formattedData);
+        }
       } else {
         // Create new event
-        await eventsApi.createEvent(formattedData);
+        if (selectedFile) {
+          // Use FormData for file upload
+          const formData = new FormData();
+          formData.append("event_image", selectedFile);
+
+          // Add other fields
+          Object.entries(formattedData).forEach(([key, value]) => {
+            if (key !== "event_img_url" && key !== "event_image") {
+              formData.append(key, value?.toString() || "");
+            }
+          });
+
+          await eventsApi.createEventWithFile(formData);
+        } else {
+          // Create without file
+          await eventsApi.createEvent(formattedData);
+        }
       }
 
       // Redirect to events page
       navigate("/events");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         `Failed to ${isEditing ? "update" : "create"} event:`,
         error
       );
       setError(
-        error.message ||
+        (error as Error)?.message ||
           `Failed to ${
             isEditing ? "update" : "create"
           } event. Please try again.`
@@ -134,12 +200,9 @@ export default function EventForm({
       )}
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit as any)}
-          className="space-y-6"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="title"
             render={({ field }) => (
               <FormItem>
@@ -153,7 +216,7 @@ export default function EventForm({
           />
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="description"
             render={({ field }) => (
               <FormItem>
@@ -171,7 +234,7 @@ export default function EventForm({
           />
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="location"
             render={({ field }) => (
               <FormItem>
@@ -186,7 +249,7 @@ export default function EventForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="start_time"
               render={({ field }) => (
                 <FormItem>
@@ -200,7 +263,7 @@ export default function EventForm({
             />
 
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="end_time"
               render={({ field }) => (
                 <FormItem>
@@ -216,7 +279,7 @@ export default function EventForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="price"
               render={({ field }) => (
                 <FormItem>
@@ -225,7 +288,7 @@ export default function EventForm({
                     <Input
                       type="number"
                       min="0"
-                      step="1"
+                      step="0.01"
                       placeholder="0.00"
                       {...field}
                     />
@@ -236,7 +299,7 @@ export default function EventForm({
             />
 
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="max_attendees"
               render={({ field }) => (
                 <FormItem>
@@ -251,7 +314,7 @@ export default function EventForm({
           </div>
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="category"
             render={({ field }) => (
               <FormItem>
@@ -278,27 +341,80 @@ export default function EventForm({
             )}
           />
 
-          <div className="space-y-2">
-            <FormField
-              control={form.control as any}
-              name="event_img_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Event Image URL (optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter URL for event image" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Provide a URL to an image that represents your event
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
+          <div className="space-y-4">
+            <FormItem>
+              <FormLabel>Event Image</FormLabel>
+              <FormDescription>
+                Upload an image file or provide a URL. File uploads are
+                preferred.
+              </FormDescription>
+
+              {/* File Upload */}
+              <div className="space-y-2">
+                <FormLabel className="text-sm font-medium">
+                  Upload Image File
+                </FormLabel>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="cursor-pointer"
+                />
+                <FormDescription>
+                  Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB.
+                </FormDescription>
+              </div>
+
+              {/* Image Preview */}
+              {(previewUrl || event?.event_img_url) && (
+                <div className="mt-4">
+                  <FormLabel className="text-sm font-medium">
+                    Image Preview
+                  </FormLabel>
+                  <div className="mt-2">
+                    <img
+                      src={previewUrl || event?.event_img_url}
+                      alt="Event preview"
+                      className="w-32 h-32 object-cover rounded-lg border"
+                    />
+                  </div>
+                </div>
               )}
-            />
+
+              {/* URL Input */}
+              <div className="space-y-2">
+                <FormLabel className="text-sm font-medium">
+                  Or Provide Image URL
+                </FormLabel>
+                <FormField
+                  control={form.control}
+                  name="event_img_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter URL for event image"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            handleUrlChange(e.target.value);
+                          }}
+                          disabled={!!selectedFile}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Provide a URL to an image that represents your event
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </FormItem>
           </div>
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="is_public"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -319,7 +435,7 @@ export default function EventForm({
           />
 
           <FormField
-            control={form.control as any}
+            control={form.control}
             name="status"
             render={({ field }) => (
               <FormItem>

@@ -75,8 +75,24 @@ const eventsApi = {
     return axiosClient.post("/events", params);
   },
 
+  createEventWithFile: (formData: FormData) => {
+    return axiosClient.post("/events", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
   updateEvent: (id: string, params: UpdateEventParams) => {
     return axiosClient.patch(`/events/${id}`, params);
+  },
+
+  updateEventWithFile: (id: string, formData: FormData) => {
+    return axiosClient.patch(`/events/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   },
 
   deleteEvent: (id: string) => {

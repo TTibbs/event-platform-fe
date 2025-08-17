@@ -17,6 +17,7 @@ import { testimonials } from "@/lib/mockData";
 import { toast } from "sonner";
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards";
 import { StickyBanner } from "@/components/ui/sticky-banner";
+import { getFullImageUrl } from "@/lib/utils";
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -88,7 +89,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <img
-                    src={event.event_img_url}
+                    src={getFullImageUrl(event.event_img_url) || undefined}
                     alt={event.title}
                     className="w-full h-40 object-cover"
                   />

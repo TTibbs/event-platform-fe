@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
 import { Users, Calendar, MapPin, ImageIcon, Ticket } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getFullImageUrl } from "@/lib/utils";
 import {
   useEventRegistrationStatus,
   useEventTicketStatus,
@@ -107,14 +107,18 @@ export function EventCard({
     try {
       await registerMutation.mutateAsync(userId);
       setRegistrationSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration failed:", error);
 
       // Extract the error message from API response if available
       let errorMessage = "Failed to register for this event. Please try again.";
 
-      if (error.response?.data?.msg) {
-        errorMessage = error.response.data.msg;
+      if (
+        (error as { response?: { data?: { msg?: string } } })?.response?.data
+          ?.msg
+      ) {
+        errorMessage = (error as { response: { data: { msg: string } } })
+          .response.data.msg;
 
         // If user is already registered, consider it a success
         if (errorMessage.includes("already registered")) {
@@ -161,7 +165,7 @@ export function EventCard({
         <div className="relative overflow-hidden p-0 m-0">
           {!imageError && event.event_img_url ? (
             <img
-              src={event.event_img_url}
+              src={getFullImageUrl(event.event_img_url) || undefined}
               alt={event.title}
               className={cn("w-full object-cover", opts.imageHeight)}
               onError={handleImageError}

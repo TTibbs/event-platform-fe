@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Loader2, PencilIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
 import StripeTicketCheckout from "@/components/payment/StripeTicketCheckout";
+import { getFullImageUrl } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -369,7 +370,7 @@ export default function EventDetails() {
         <div className="bg-card text-card-foreground shadow-md rounded-lg p-6 mb-6">
           <div className="mb-4">
             <img
-              src={event.event_img_url}
+              src={getFullImageUrl(event.event_img_url) || undefined}
               alt={event.title}
               className="w-1/2 h-auto object-cover rounded-lg mb-4"
             />
