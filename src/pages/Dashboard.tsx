@@ -1,33 +1,23 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { DashboardSidebar, useDashboard } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/EventCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { Edit, Mail, User } from "lucide-react";
+import { Edit } from "lucide-react";
 import teamsApi from "@/api/teams";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import TeamMember from "@/components/dashboard/TeamMember";
 
 export default function Dashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     teamDraftEvents,
     teamEvents,
     teamMembers,
     loading,
     error,
-    activeSection,
-    setActiveSection,
     user,
     teamId,
   } = useDashboard();
@@ -36,6 +26,14 @@ export default function Dashboard() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState<boolean>(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // Get active section from URL params, default to "all-events"
+  const activeSection = searchParams.get("section") || "all-events";
+
+  // Function to update active section
+  const setActiveSection = (section: string) => {
+    setSearchParams({ section });
+  };
 
   // Fetch user's team role from the teams array in the user object
   useEffect(() => {
@@ -83,12 +81,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (activeSection === "create-event") {
       navigate("/events/create");
+      // Reset the section to all-events after navigation
+      setSearchParams({ section: "all-events" });
     }
-  }, [activeSection, navigate]);
+  }, [activeSection, navigate, setSearchParams]);
 
   // Navigate to edit event page
   const handleEditEvent = (eventId: number) => {
-    navigate(`/events/${eventId}/edit`);
+    navigate(`/events/edit/${eventId}`);
   };
 
   // Get role badge color
@@ -105,13 +105,6 @@ export default function Dashboard() {
       default:
         return "bg-slate-500";
     }
-  };
-
-  // Format role for display
-  const formatRole = (role: string) => {
-    return role
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   // Handle deleting a team member
@@ -160,59 +153,15 @@ export default function Dashboard() {
       {teamMembers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teamMembers.map((member) => (
-            <Card key={member.id} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    {member.profile_image_url && (
-                      <AvatarImage
-                        src={member.profile_image_url}
-                        alt={member.username}
-                      />
-                    )}
-                    <AvatarFallback className="bg-primary/10">
-                      <User className="h-6 w-6 text-primary" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-lg">{member.username}</CardTitle>
-                    <CardDescription>
-                      <Badge
-                        className={`${getRoleBadgeColor(
-                          member.role
-                        )} text-white mt-1`}
-                      >
-                        {formatRole(member.role)}
-                      </Badge>
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <Mail className="h-4 w-4" />
-                  <span>{member.email}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">
-                  Team joined:{" "}
-                  {new Date(member.team_created_at).toLocaleDateString()}
-                </p>
-              </CardContent>
-              {canDeleteTeamMembers && member.user_id !== authUser?.id && (
-                <CardFooter>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteTeamMember(member.user_id)}
-                    disabled={isDeleting === member.user_id.toString()}
-                  >
-                    {isDeleting === member.user_id.toString()
-                      ? "Removing..."
-                      : "Remove"}
-                  </Button>
-                </CardFooter>
-              )}
-            </Card>
+            <TeamMember
+              key={member.id}
+              member={member}
+              getRoleBadgeColor={getRoleBadgeColor}
+              canDeleteTeamMembers={canDeleteTeamMembers || false}
+              handleDeleteTeamMember={handleDeleteTeamMember}
+              isDeleting={isDeleting || ""}
+              authUser={authUser || { id: 0 }}
+            />
           ))}
         </div>
       ) : (

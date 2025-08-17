@@ -14,7 +14,6 @@ export function useDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [isTeamMember, setIsTeamMember] = useState<boolean>(false);
-  const [activeSection, setActiveSection] = useState<string>("overview");
   const [teamId, setTeamId] = useState<number | null>(null);
   const { user, updateUserData } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +25,16 @@ export function useDashboard() {
     const checkTeamMembership = async () => {
       if (!user?.id) return;
 
+      // If user already has team data, use it instead of making API call
+      if (user.teams && user.teams.length > 0) {
+        const userTeam = user.teams[0]; // Assuming user is in one team
+        setIsTeamMember(true);
+        setTeamId(userTeam.team_id);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
         const response = await teamsApi.getMemberByUserId(user.id.toString());
         // If we get a successful response, the user is a team member
@@ -55,6 +64,10 @@ export function useDashboard() {
           // Redirect non-team members to profile page
           navigate("/profile");
         }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -63,7 +76,7 @@ export function useDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [user?.id, navigate, updateUserData]);
+  }, [user?.id, user?.teams, navigate]);
 
   // Fetch draft events when teamId is available
   useEffect(() => {
@@ -72,7 +85,6 @@ export function useDashboard() {
     const fetchTeamDraftEvents = async () => {
       if (!isTeamMember || !teamId) return;
 
-      setLoading(true);
       try {
         const response = await eventsApi.getTeamDraftEvents(teamId.toString());
         if (isMounted) {
@@ -86,10 +98,6 @@ export function useDashboard() {
               : new Error(err?.message || "Unknown error")
           );
         }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
       }
     };
 
@@ -98,7 +106,7 @@ export function useDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [isTeamMember, teamId]);
+  }, [teamId]); // Removed isTeamMember dependency since it's derived from teamId
 
   // Fetch all events when user is a team member
   useEffect(() => {
@@ -107,7 +115,6 @@ export function useDashboard() {
     const fetchTeamEvents = async () => {
       if (!teamId) return;
 
-      setLoading(true);
       try {
         const response = await eventsApi.getEventsByTeam(teamId.toString());
         if (isMounted) {
@@ -120,10 +127,6 @@ export function useDashboard() {
               ? err
               : new Error(err?.message || "Unknown error")
           );
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
         }
       }
     };
@@ -171,8 +174,6 @@ export function useDashboard() {
     loading,
     error,
     isTeamMember,
-    activeSection,
-    setActiveSection,
     teamId,
     teamMembers,
     user,

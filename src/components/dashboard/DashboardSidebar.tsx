@@ -1,4 +1,4 @@
-import { FilePlus, Calendar, FileText, Users } from "lucide-react";
+import { Calendar, FileText, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -70,23 +70,6 @@ export function DashboardSidebar({
                 >
                   <Users className="mr-2" />
                   <span>Team Members</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => onSectionChange("create-event")}
-                  className="cursor-pointer"
-                >
-                  <FilePlus className="mr-2" />
-                  <span>Create New Event</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
